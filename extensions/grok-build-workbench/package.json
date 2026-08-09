@@ -1,0 +1,598 @@
+{
+  "name": "grok-build-workbench",
+  "displayName": "Grok Build IDE",
+  "icon": "logo/grok-fluffy.png",
+  "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
+  "version": "1.0.6",
+  "publisher": "local-grok-workbench",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "vscode": "^1.100.0",
+    "node": ">=20.11.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "grok",
+    "agent",
+    "acp",
+    "coding"
+  ],
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onView:grokBuild.chat",
+    "onCommand:grokBuild.connect",
+    "onCommand:grokBuild.disconnect",
+    "onCommand:grokBuild.newSession",
+    "onCommand:grokBuild.openExplorer",
+    "onCommand:grokBuild.openIde",
+    "onCommand:grokBuild.openGrokBuildIde",
+    "onCommand:grokBuild.openGrokBuild",
+    "onCommand:grokBuild.agentMode",
+    "onCommand:grokBuild.toggleAgentIde",
+    "onCommand:grokBuild.layout",
+    "onCommand:grokBuild.openTaskbarSettings",
+    "onCommand:grokBuild.openCliConfig",
+    "onCommand:grokBuild.sessions",
+    "onView:grokBuild.sessions",
+    "onCommand:grokBuild.renameSession",
+    "onCommand:grokBuild.mcp",
+    "onCommand:grokBuild.worktree",
+    "onCommand:grokBuild.plugins",
+    "onCommand:grokBuild.login",
+    "onCommand:grokBuild.doctor",
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "grokBuildSessions",
+          "title": "Conversations",
+          "icon": "logo/sessions.svg"
+        }
+      ],
+      "secondarySidebar": [
+        {
+          "id": "grokBuild",
+          "title": "Grok Build",
+          "icon": "logo/grok-fluffy.png"
+        }
+      ]
+    },
+    "views": {
+      "grokBuild": [
+        {
+          "type": "webview",
+          "id": "grokBuild.chat",
+          "name": "Agent"
+        }
+      ],
+      "grokBuildSessions": [
+        {
+          "id": "grokBuild.sessions",
+          "name": "History",
+          "icon": "logo/sessions.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "grokBuild.connect",
+        "title": "Connect",
+        "category": "Grok Build",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "grokBuild.disconnect",
+        "title": "Disconnect",
+        "category": "Grok Build",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "grokBuild.newSession",
+        "title": "New Conversation",
+        "category": "Grok Build",
+        "icon": "$(add)"
+      },
+      {
+        "command": "grokBuild.clearConversation",
+        "title": "Clear Conversation",
+        "category": "Grok Build",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "grokBuild.sessions",
+        "title": "Browse Sessions",
+        "category": "Grok Build",
+        "icon": "$(history)"
+      },
+      {
+        "command": "grokBuild.exportSession",
+        "title": "Export Active Session",
+        "category": "Grok Build",
+        "icon": "$(export)"
+      },
+      {
+        "command": "grokBuild.mcp",
+        "title": "Manage MCP Servers",
+        "category": "Grok Build",
+        "icon": "$(server-process)"
+      },
+      {
+        "command": "grokBuild.worktree",
+        "title": "Manage Worktrees",
+        "category": "Grok Build",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "grokBuild.plugins",
+        "title": "Manage Plugins",
+        "category": "Grok Build",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "grokBuild.login",
+        "title": "Login",
+        "category": "Grok Build",
+        "icon": "$(account)"
+      },
+      {
+        "command": "grokBuild.logout",
+        "title": "Logout",
+        "category": "Grok Build",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "grokBuild.doctor",
+        "title": "Run Doctor",
+        "category": "Grok Build",
+        "icon": "$(heart)"
+      },
+      {
+        "command": "grokBuild.memoryClear",
+        "title": "Clear Memory",
+        "category": "Grok Build",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "grokBuild.openSettings",
+        "title": "Open Settings",
+        "category": "Grok Build",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "grokBuild.openExplorer",
+        "title": "Open Explorer",
+        "category": "Grok Build",
+        "icon": "$(files)"
+      },
+      {
+        "command": "grokBuild.openIde",
+        "title": "Open Grok Build IDE",
+        "category": "Grok Build",
+        "icon": "$(window)"
+      },
+      {
+        "command": "grokBuild.openGrokBuildIde",
+        "title": "Open Grok Build IDE",
+        "category": "Grok Build",
+        "icon": "$(window)"
+      },
+      {
+        "command": "grokBuild.openGrokBuild",
+        "title": "Open Grok Build",
+        "category": "Grok Build",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "grokBuild.agentMode",
+        "title": "Open Grok Build (Agent Desktop)",
+        "category": "Grok Build",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "grokBuild.toggleAgentIde",
+        "title": "Toggle Grok Build ↔ Grok Build IDE",
+        "category": "Grok Build",
+        "icon": "$(layout)"
+      },
+      {
+        "command": "grokBuild.layout",
+        "title": "Layout and Move View",
+        "category": "Grok Build",
+        "icon": "$(layout-sidebar-right)"
+      },
+      {
+        "command": "grokBuild.openCliConfig",
+        "title": "Open Grok CLI Config",
+        "category": "Grok Build",
+        "icon": "$(settings)"
+      },
+      {
+        "command": "grokBuild.openTaskbarSettings",
+        "title": "Open Windows Taskbar Settings",
+        "category": "Grok Build",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "grokBuild.loadSessionFromTree",
+        "title": "Load Session From Tree",
+        "category": "Grok Build"
+      },
+      {
+        "command": "grokBuild.refreshSessionsTree",
+        "title": "Refresh Sessions Tree",
+        "category": "Grok Build",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "grokBuild.renameSession",
+        "title": "Rename Conversation…",
+        "category": "Grok Build",
+        "icon": "$(edit)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "grokBuild.newSession",
+          "when": "view == grokBuild.chat",
+          "group": "navigation@1"
+        },
+        {
+          "command": "grokBuild.openIde",
+          "when": "view == grokBuild.chat",
+          "group": "navigation@2"
+        },
+        {
+          "command": "grokBuild.sessions",
+          "when": "view == grokBuild.chat",
+          "group": "navigation@3"
+        },
+        {
+          "command": "grokBuild.connect",
+          "when": "view == grokBuild.chat && grokBuild.connected != true",
+          "group": "navigation@4"
+        },
+        {
+          "command": "grokBuild.disconnect",
+          "when": "view == grokBuild.chat && grokBuild.connected == true",
+          "group": "navigation@4"
+        },
+        {
+          "command": "grokBuild.openSettings",
+          "when": "view == grokBuild.chat",
+          "group": "navigation@5"
+        },
+        {
+          "command": "grokBuild.newSession",
+          "when": "view == grokBuild.sessions",
+          "group": "navigation@1"
+        },
+        {
+          "command": "grokBuild.refreshSessionsTree",
+          "when": "view == grokBuild.sessions",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "grokBuild.renameSession",
+          "when": "view == grokBuild.sessions && viewItem =~ /session/",
+          "group": "inline@1"
+        },
+        {
+          "command": "grokBuild.renameSession",
+          "when": "view == grokBuild.sessions && viewItem =~ /session/",
+          "group": "1_modification@1"
+        },
+        {
+          "command": "grokBuild.loadSessionFromTree",
+          "when": "view == grokBuild.sessions && viewItem =~ /session/",
+          "group": "0_navigation@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "grokBuild.renameSession",
+        "key": "f2",
+        "when": "view == grokBuild.sessions && viewItem =~ /session/"
+      }
+    ],
+    "configurationDefaults": {
+      "chat.disableAIFeatures": true,
+      "workbench.startupEditor": "none",
+      "workbench.secondarySideBar.defaultVisibility": "visible",
+      "workbench.secondarySideBar.showLabels": true,
+      "workbench.sideBar.location": "left",
+      "window.title": "Grok Build IDE${separator}${activeEditorShort}${separator}${rootName}",
+      "cSpell.diagnosticLevel": "Hint",
+      "cSpell.validateDirectives": false,
+      "errorLens.enabledDiagnosticLevels": [
+        "error",
+        "warning"
+      ],
+      "errorLens.excludeBySource": [
+        "cSpell",
+        "cSpell.*",
+        "CodeSpellChecker"
+      ]
+    },
+    "configuration": {
+      "title": "Grok Build IDE",
+      "properties": {
+        "grokBuild.defaultProduct": {
+          "type": "string",
+          "default": "grok-build-ide",
+          "enum": ["grok-build", "grok-build-ide"],
+          "enumDescriptions": [
+            "Grok Build — agent desktop (conversations first)",
+            "Grok Build IDE — full IDE (Explorer / editor first)"
+          ],
+          "scope": "window",
+          "order": 0,
+          "markdownDescription": "Default product surface on first launch (Antigravity-style split).\n\n- **grok-build**: agent desktop UI + **Open Grok Build IDE**\n- **grok-build-ide**: classic IDE chrome; switch back via **Open Grok Build**\n\nLast used product is remembered across sessions."
+        },
+        "grokBuild.agentFirstLayout": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "order": 1,
+          "markdownDescription": "When **on**, prefer the **Grok Build** agent desktop product at startup (unless you last used Grok Build IDE). When **off**, start in **Grok Build IDE**."
+        },
+        "grokBuild.executablePath": {
+          "type": "string",
+          "default": "grok",
+          "scope": "machine",
+          "order": 1,
+          "markdownDescription": "Path to the `grok` CLI (or source-built binary) used for ACP.\n\n**Examples**\n- `grok` (PATH)\n- `C:\\\\Users\\\\you\\\\.grok\\\\bin\\\\grok.exe`\n- `H:\\\\tools\\\\xai-grok-pager\\\\grok.exe`"
+        },
+        "grokBuild.extraArguments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "machine",
+          "order": 2,
+          "markdownDescription": "Extra global CLI args inserted **before** `agent stdio`.\n\n**Example**\n```json\n[\"--verbose\"]\n```"
+        },
+        "grokBuild.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "order": 3,
+          "markdownDescription": "Connect to Grok automatically when the Agent view opens."
+        },
+        "grokBuild.localSnippetCompletions": {
+          "type": "boolean",
+          "default": false,
+          "order": 4,
+          "markdownDescription": "Local hard-coded snippet ghost text only (**not AI**). Off by default."
+        },
+        "grokBuild.model": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 10,
+          "markdownDescription": "Model id for `--model`. Leave empty for CLI default.\n\n**Examples**\n- `` (empty = default)\n- `grok-4`\n- `grok-3-mini`"
+        },
+        "grokBuild.reasoningEffort": {
+          "type": "string",
+          "default": "",
+          "enum": [
+            "",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "enumItemLabels": [
+            "Default (CLI)",
+            "Low",
+            "Medium",
+            "High",
+            "Extra high"
+          ],
+          "enumDescriptions": [
+            "Use the CLI / model default effort.",
+            "Faster, shorter reasoning.",
+            "Balanced (common default).",
+            "Deeper reasoning for harder tasks.",
+            "Maximum effort when supported."
+          ],
+          "scope": "resource",
+          "order": 11,
+          "markdownDescription": "Reasoning effort for `--reasoning-effort`."
+        },
+        "grokBuild.showReasoning": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "order": 12,
+          "markdownDescription": "Show collapsible **Thinking** blocks from the agent stream."
+        },
+        "grokBuild.permissionMode": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "acceptEdits",
+            "auto",
+            "plan",
+            "dontAsk",
+            "full"
+          ],
+          "enumItemLabels": [
+            "Ask every time",
+            "Accept edits",
+            "Auto (safe tools)",
+            "Plan",
+            "Don't ask (ACP)",
+            "Full access"
+          ],
+          "enumDescriptions": [
+            "Show a permission card in chat for every ACP tool request (safest).",
+            "Auto-approve reads and edits; still ask for shell/unknown tools.",
+            "Native auto mode; client also auto-approves safe read/search/think/fetch.",
+            "Plan-oriented mode; keep execution interactive.",
+            "Auto-approve ACP tool permission requests (dontAsk / always-approve style).",
+            "Pass --always-approve. Deny rules, hooks, sandbox, and workspace FS scope still apply."
+          ],
+          "default": "ask",
+          "scope": "resource",
+          "order": 20,
+          "markdownDescription": "How the workbench answers Grok **tool permission** prompts.\n\n> **Tip:** start with `ask`, switch to `acceptEdits` or `auto` when you trust the workspace."
+        },
+        "grokBuild.sandbox": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 21,
+          "markdownDescription": "Sandbox profile for `--sandbox`.\n\n**Examples**\n- `` (CLI default)\n- `workspace`\n- `off`"
+        },
+        "grokBuild.tools": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 22,
+          "markdownDescription": "Allow-list of built-in tools (`--tools`), comma-separated.\n\n**Example**\n`read,edit,bash`"
+        },
+        "grokBuild.deniedTools": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 23,
+          "markdownDescription": "Deny-list of built-in tools (`--disallowed-tools`).\n\n**Example**\n`bash,web_search`"
+        },
+        "grokBuild.worktree": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 30,
+          "markdownDescription": "Git worktree name/path for the next session (`--worktree`). Prefer the **Worktrees** tool menu."
+        },
+        "grokBuild.worktreeRef": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 31,
+          "markdownDescription": "Base ref for `--worktree-ref` (branch/tag/commit).\n\n**Example**\n`main`"
+        },
+        "grokBuild.experimentalMemory": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "order": 32,
+          "markdownDescription": "Enable cross-session memory (`--experimental-memory`)."
+        },
+        "grokBuild.disableWebSearch": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "order": 33,
+          "markdownDescription": "Disable web search / fetch tools (`--disable-web-search`)."
+        },
+        "grokBuild.rules": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "order": 34,
+          "markdownDescription": "Extra rules appended to the system prompt (`--rules`).\n\n**Example**\n`Prefer TypeScript. Do not commit secrets.`"
+        },
+        "grokBuild.maxTurns": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "scope": "resource",
+          "order": 35,
+          "markdownDescription": "Max agent turns (`--max-turns`). `0` = unlimited / CLI default.\n\n**Example**\n`40`"
+        },
+        "grokBuild.enableTerminal": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "order": 40,
+          "markdownDescription": "Advertise ACP terminal reverse-RPC and host shell tools via Node child processes."
+        },
+        "grokBuild.allowOutsideWorkspace": {
+          "type": "boolean",
+          "default": false,
+          "order": 41,
+          "markdownDescription": "Allow ACP file access **outside** the open workspace. Only for trusted agents/projects."
+        },
+        "grokBuild.followAgentFiles": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "order": 42,
+          "markdownDescription": "Open files announced by tool locations in the editor while Grok works."
+        },
+        "grokBuild.openDiffOnEdit": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "order": 43,
+          "markdownDescription": "Open a native VS Code diff when ACP supplies a diff or writes a file. Each change opens its **own tab** by default (not a single reusable preview tab)."
+        },
+        "grokBuild.openEditsInPreview": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "order": 44,
+          "markdownDescription": "When **on**, agent file follows and diffs use **preview** tabs (italic) that replace each other — old single-tab behavior.\n\nWhen **off** (default), each file/diff opens a **pinned tab** like double-clicking in VS Code so you can keep a list of reviews open."
+        },
+        "grokBuild.maxAutoOpenEdits": {
+          "type": "number",
+          "default": 6,
+          "minimum": 0,
+          "maximum": 30,
+          "scope": "resource",
+          "order": 45,
+          "markdownDescription": "Max editor tabs auto-opened per turn for agent diffs/file follows. Extra edits stay available via **Review** on the chat card. Lower this if the window freezes near the end of a turn."
+        },
+        "grokBuild.showToolDetails": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "order": 46,
+          "markdownDescription": "Show file locations and review actions on tool cards."
+        },
+        "grokBuild.voiceInput": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "order": 50,
+          "markdownDescription": "**Experimental / usually unavailable.** Electron webviews rarely expose Web Speech API, so the mic stays hidden unless the runtime provides `SpeechRecognition`. Prefer typing or paste.\n\nDefault: **off** (removed from normal UX)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs --production",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:visual": "node test/visual/verify-webview.mjs",
+    "check": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production && node ../../scripts/check-grok-release-contract.mjs && node test/visual/verify-webview.mjs",
+    "vscode:prepublish": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production",
+    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.6.vsix"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^1.3.0",
+    "@vitest/utils": "^3.2.7",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

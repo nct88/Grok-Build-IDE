@@ -1,0 +1,7 @@
+{
+  "tool": "Visual Studio Code Extension Manager (vsce pack API after explicit prepublish gates)",
+  "command": "node scripts/package-grok-workbench-extension.mjs extensions/grok-build-workbench .build/release-candidates/0.3.9-final/extension/grok-build-workbench-0.8.3.vsix",
+  "artifact": "releases/0.8.3/grok-build-workbench-0.8.3.vsix",
+  "verifiedAt": "2026-08-02T19:45:51Z",
+  "status": "verified"
+}

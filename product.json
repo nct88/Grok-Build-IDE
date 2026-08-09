@@ -1,0 +1,202 @@
+{
+	"nameShort": "Grok Build IDE",
+	"nameLong": "Grok Build IDE",
+	"applicationName": "grok-build-ide",
+	"dataFolderName": ".grok-build-ide",
+	"sharedDataFolderName": ".grok-build-ide-shared",
+	"win32MutexName": "grokbuildide",
+	"licenseName": "MIT",
+	"licenseUrl": "https://github.com/microsoft/vscode/blob/main/LICENSE.txt",
+	"serverLicenseUrl": "https://github.com/microsoft/vscode/blob/main/LICENSE.txt",
+	"serverGreeting": [],
+	"serverLicense": [],
+	"serverLicensePrompt": "",
+	"serverApplicationName": "grok-build-ide-server",
+	"serverDataFolderName": ".grok-build-ide-server",
+	"tunnelApplicationName": "grok-build-tunnel",
+	"win32DirName": "Grok Build IDE",
+	"win32NameVersion": "Grok Build IDE",
+	"win32RegValueName": "GrokBuildIDE",
+	"win32x64AppId": "{{4A5F537D-E908-4CD8-975F-E663CEDB6771}",
+	"win32arm64AppId": "{{6E5A95AE-B930-40F0-A877-5A7BF2B5F6B6}",
+	"win32x64UserAppId": "{{823775F0-84F8-47F4-99F9-A7D5FDE63BB9}",
+	"win32arm64UserAppId": "{{C51A9651-21CA-4C36-90E8-9BC6178EE8AC}",
+	"win32AppUserModelId": "LocalGrok.GrokBuildIDE",
+	"win32ShellNameShort": "Grok Build &IDE",
+	"win32TunnelServiceMutex": "grokbuild-tunnelservice",
+	"win32TunnelMutex": "grokbuild-tunnel",
+	"darwinBundleIdentifier": "local.grok.build",
+	"darwinProfileUUID": "4A5F537D-E908-4CD8-975F-E663CEDB6771",
+	"darwinProfilePayloadUUID": "823775F0-84F8-47F4-99F9-A7D5FDE63BB9",
+	"linuxIconName": "grok-build",
+	"nodejsRepository": "https://nodejs.org",
+	"urlProtocol": "grok-build-ide",
+	"agentsTelemetryAppName": "grok-build-agents",
+	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
+	"builtInExtensions": [
+		{
+			"name": "ms-vscode.js-debug-companion",
+			"version": "1.1.3",
+			"sha256": "7380a890787452f14b2db7835dfa94de538caf358ebc263f9d46dd68ac52de93",
+			"repo": "https://github.com/microsoft/vscode-js-debug-companion",
+			"metadata": {
+				"id": "99cb0b7f-7354-4278-b8da-6cc79972169d",
+				"publisherId": {
+					"publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+					"publisherName": "ms-vscode",
+					"displayName": "Microsoft",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "Microsoft"
+			}
+		},
+		{
+			"name": "ms-vscode.js-debug",
+			"version": "1.117.0",
+			"sha256": "854eeb8a785b1f41ba2bd02d7ccd4fdbe10021b61473293973c7e96d036c7fb8",
+			"repo": "https://github.com/microsoft/vscode-js-debug",
+			"metadata": {
+				"id": "25629058-ddac-4e17-abba-74678e126c5d",
+				"publisherId": {
+					"publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+					"publisherName": "ms-vscode",
+					"displayName": "Microsoft",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "Microsoft"
+			}
+		},
+		{
+			"name": "ms-vscode.vscode-js-profile-table",
+			"version": "1.0.10",
+			"sha256": "7361748ddf9fd09d8a2ed1f2a2d7376a2cf9aae708692820b799708385c38e08",
+			"repo": "https://github.com/microsoft/vscode-js-profile-visualizer",
+			"metadata": {
+				"id": "7e52b41b-71ad-457b-ab7e-0620f1fc4feb",
+				"publisherId": {
+					"publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+					"publisherName": "ms-vscode",
+					"displayName": "Microsoft",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "Microsoft"
+			}
+		}
+	],
+	"defaultChatAgent": {
+		"extensionId": "",
+		"chatExtensionId": "",
+		"chatExtensionOutputId": "grok-build-workbench",
+		"chatExtensionOutputExtensionStateCommand": "grokBuild.openSettings",
+		"documentationUrl": "https://github.com/xai-org/grok-build",
+		"termsStatementUrl": "",
+		"privacyStatementUrl": "",
+		"skusDocumentationUrl": "",
+		"publicCodeMatchesUrl": "",
+		"managePlanUrl": "",
+		"upgradePlanUrl": "",
+		"signUpUrl": "",
+		"provider": {
+			"default": { "id": "grok", "name": "Grok" },
+			"enterprise": { "id": "grok", "name": "Grok" },
+			"google": { "id": "grok", "name": "Grok" },
+			"apple": { "id": "grok", "name": "Grok" }
+		},
+		"providerExtensionId": "",
+		"providerUriSetting": "",
+		"providerScopes": [],
+		"entitlementUrl": "",
+		"entitlementSignupLimitedUrl": "",
+		"chatQuotaExceededContext": "",
+		"completionsQuotaExceededContext": "",
+		"walkthroughCommand": "grokBuild.connect",
+		"completionsMenuCommand": "grokBuild.openSettings",
+		"chatRefreshTokenCommand": "grokBuild.connect",
+		"generateCommitMessageCommand": "",
+		"resolveMergeConflictsCommand": "",
+		"completionsAdvancedSetting": "",
+		"completionsEnablementSetting": "",
+		"nextEditSuggestionsSetting": "",
+		"tokenEntitlementUrl": "",
+		"mcpRegistryDataUrl": "",
+		"managedSettingsUrl": ""
+	},
+	"trustedExtensionAuthAccess": {},
+	"onboardingKeymaps": [
+		{
+			"id": "vscode",
+			"label": "VS Code",
+			"description": "Default keyboard mapping"
+		},
+		{
+			"id": "sublime",
+			"label": "Sublime Text",
+			"extensionId": "ms-vscode.sublime-keybindings",
+			"description": "Keyboard mapping from Sublime Text"
+		},
+		{
+			"id": "intellij",
+			"label": "IntelliJ / JetBrains",
+			"extensionId": "k--kato.intellij-idea-keybindings",
+			"description": "Keyboard mapping from IntelliJ IDEA"
+		},
+		{
+			"id": "vim",
+			"label": "Vim",
+			"extensionId": "vscodevim.vim",
+			"description": "Vim modal editing"
+		},
+		{
+			"id": "eclipse",
+			"label": "Eclipse",
+			"extensionId": "alphabotsec.vscode-eclipse-keybindings",
+			"description": "Keyboard mapping from Eclipse"
+		},
+		{
+			"id": "notepadpp",
+			"label": "Notepad++",
+			"extensionId": "ms-vscode.notepadplusplus-keybindings",
+			"description": "Keyboard mapping from Notepad++"
+		}
+	],
+	"onboardingThemes": [
+		{
+			"id": "dark-2026",
+			"label": "Dark 2026",
+			"themeId": "Dark 2026",
+			"type": "dark"
+		},
+		{
+			"id": "hc-dark",
+			"label": "Dark High Contrast",
+			"themeId": "Default High Contrast",
+			"type": "hcDark"
+		},
+		{
+			"id": "solarized-dark",
+			"label": "Solarized Dark",
+			"themeId": "Solarized Dark",
+			"type": "dark"
+		},
+		{
+			"id": "light-2026",
+			"label": "Light 2026",
+			"themeId": "Light 2026",
+			"type": "light"
+		},
+		{
+			"id": "hc-light",
+			"label": "Light High Contrast",
+			"themeId": "Default High Contrast Light",
+			"type": "hcLight"
+		},
+		{
+			"id": "solarized-light",
+			"label": "Solarized Light",
+			"themeId": "Solarized Light",
+			"type": "light"
+		}
+	],
+	"builtInExtensionsEnabledWithAutoUpdates": [],
+	"sessionsWindowAllowedExtensions": []
+}

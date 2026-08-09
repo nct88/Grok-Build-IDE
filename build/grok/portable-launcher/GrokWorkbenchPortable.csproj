@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<ApplicationIcon>../../../resources/win32/code.ico</ApplicationIcon>
+		<AssemblyName>Grok-Build-IDE-$(ReleaseVersion)-win32-x64-portable</AssemblyName>
+		<RootNamespace>GrokWorkbench.Portable</RootNamespace>
+	</PropertyGroup>
+	<Target Name="ValidatePortableProperties" BeforeTargets="PrepareForBuild">
+		<Error Condition="'$(PayloadArchive)' == ''" Text="PayloadArchive is required." />
+		<Error Condition="!Exists('$(PayloadArchive)')" Text="PayloadArchive does not exist: $(PayloadArchive)" />
+		<Error Condition="'$(PayloadSha256)' == ''" Text="PayloadSha256 is required." />
+		<Error Condition="'$(PayloadRoot)' == ''" Text="PayloadRoot is required." />
+		<Error Condition="'$(ReleaseVersion)' == ''" Text="ReleaseVersion is required." />
+	</Target>
+	<ItemGroup>
+		<EmbeddedResource Include="$(PayloadArchive)" LogicalName="GrokWorkbench.Payload.zip" />
+		<AssemblyMetadata Include="PayloadSha256" Value="$(PayloadSha256)" />
+		<AssemblyMetadata Include="PayloadRoot" Value="$(PayloadRoot)" />
+		<AssemblyMetadata Include="ReleaseVersion" Value="$(ReleaseVersion)" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+{
+  "unwantedRecommendations": [],
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.powershell",
+    "rust-lang.rust-analyzer",
+    "golang.go",
+    "bradlc.vscode-tailwindcss",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens"
+  ],
+  "note": "These are marketplace recommendations only. Code-OSS already ships ~90 built-in language packs (TypeScript, Python syntax, Go, Rust, Java, C++, HTML/CSS, JSON, etc.). Auto-installing marketplace VSIX requires network + publisher trust; portable builds keep language support built-in without marketplace."
+}

@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/xai-org/grok-build",
+  "commit": "a4221165824e5b1f5c4c10b7459f65e78dd6448d",
+  "defaultBranch": "main",
+  "inspectedOn": "2026-08-01",
+  "integrationCommand": ["grok", "agent", "stdio"],
+  "upstreamLicense": "Apache-2.0",
+  "acpRustCrateVersion": "0.10.4",
+  "notes": "Reference only. Grok Build source and binaries are not vendored by this project."
+}

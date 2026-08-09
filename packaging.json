@@ -1,0 +1,18 @@
+{
+  "product": "Grok Build IDE",
+  "versionSource": "build/grok/VERSION",
+  "tool": ".NET single-file launcher + Inno Setup + VSIX update pack",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/grok-release/build-and-publish.ps1 -Version <version>",
+  "channels": {
+    "portable": "dist/<version>/portable/",
+    "install": "dist/<version>/install/",
+    "update": "dist/<version>/update/"
+  },
+  "manifest": "dist/<version>/MANIFEST.json",
+  "latest": "dist/latest.json",
+  "immutableVersions": true,
+  "signing": {
+    "requiredForPublicRelease": true,
+    "status": "external-gate"
+  }
+}

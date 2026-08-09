@@ -1,0 +1,9 @@
+.project-memory/runtime/
+node_modules/
+dist/
+out/
+coverage/
+/*.vsix
+.vscode-test/
+.DS_Store
+temp/

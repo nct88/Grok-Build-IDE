@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<PublishTrimmed>false</PublishTrimmed>
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
+		<ApplicationIcon>../../../resources/win32/code.ico</ApplicationIcon>
+		<AssemblyName>Grok-Build-IDE-Setup-$(ReleaseVersion)-win32-x64</AssemblyName>
+		<RootNamespace>GrokBuildIDE.Setup</RootNamespace>
+	</PropertyGroup>
+	<Target Name="ValidateSetupProperties" BeforeTargets="PrepareForBuild">
+		<Error Condition="'$(PayloadArchive)' == ''" Text="PayloadArchive is required." />
+		<Error Condition="!Exists('$(PayloadArchive)')" Text="PayloadArchive does not exist: $(PayloadArchive)" />
+		<Error Condition="'$(ReleaseVersion)' == ''" Text="ReleaseVersion is required." />
+	</Target>
+	<ItemGroup>
+		<EmbeddedResource Include="$(PayloadArchive)" LogicalName="GrokBuildIDE.Payload.zip" />
+		<AssemblyMetadata Include="ReleaseVersion" Value="$(ReleaseVersion)" />
+	</ItemGroup>
+</Project>

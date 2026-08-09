@@ -1,0 +1,38 @@
+{
+  "security.workspace.trust.enabled": false,
+  "window.openFoldersInNewWindow": "off",
+  "window.openWithoutArgumentsInNewWindow": "off",
+  "window.restoreWindows": "preserve",
+  "files.hotExit": "onExitAndWindowClose",
+  "git.openRepositoryInParentFolders": "always",
+  "extensions.autoCheckUpdates": false,
+  "extensions.autoUpdate": false,
+  "workbench.startupEditor": "none",
+  "workbench.secondarySideBar.defaultVisibility": "visible",
+  "workbench.secondarySideBar.showLabels": false,
+
+  "cSpell.enabled": true,
+  "cSpell.language": "en",
+  "cSpell.diagnosticLevel": "Hint",
+  "cSpell.validateDirectives": false,
+  "cSpell.ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/.build/**",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml"
+  ],
+  "cSpell.ignoreRegExpList": [
+    "/[\\u00C0-\\u1EF9]+/g"
+  ],
+  "cSpell.allowCompoundWords": true,
+
+  "errorLens.enabled": true,
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "errorLens.excludeBySource": [
+    "cSpell",
+    "cSpell.*",
+    "CodeSpellChecker"
+  ]
+}

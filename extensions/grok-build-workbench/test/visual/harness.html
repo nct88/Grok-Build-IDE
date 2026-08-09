@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../../media/styles.css?v=11">
+  <title>Grok Build IDE visual harness</title>
+  <style>
+    :root {
+      --vscode-font-family: "Segoe UI", sans-serif;
+      --vscode-font-size: 13px;
+      --vscode-editor-font-family: "Cascadia Code", monospace;
+      --vscode-focusBorder: #0078d4;
+      --vscode-testing-iconPassed: #2ea043;
+      --vscode-progressBar-background: #3794ff;
+      --vscode-errorForeground: #f14c4c;
+      --vscode-textLink-foreground: #4daafc;
+      --vscode-button-background: #0e639c;
+      --vscode-button-foreground: #ffffff;
+      --vscode-button-hoverBackground: #1177bb;
+      --vscode-button-secondaryBackground: #3a3d41;
+      --vscode-button-secondaryForeground: #ffffff;
+      --vscode-button-secondaryHoverBackground: #45494e;
+      --vscode-menu-background: #252526;
+      --vscode-menu-foreground: #cccccc;
+      --vscode-menu-selectionBackground: #04395e;
+      --vscode-menu-selectionForeground: #ffffff;
+      --vscode-list-activeSelectionBackground: #04395e;
+      --vscode-list-activeSelectionForeground: #ffffff;
+    }
+
+    :root[data-theme="dark"] {
+      --vscode-foreground: #cccccc;
+      --vscode-sideBar-foreground: #cccccc;
+      --vscode-sideBar-background: #181818;
+      --vscode-descriptionForeground: #9d9d9d;
+      --vscode-editor-background: #1f1f1f;
+      --vscode-editorWidget-background: #252526;
+      --vscode-widget-border: #3c3c3c;
+      --vscode-toolbar-hoverBackground: #2a2d2e;
+      --vscode-input-background: #313131;
+      --vscode-input-foreground: #cccccc;
+      --vscode-input-placeholderForeground: #989898;
+      --vscode-input-border: #3c3c3c;
+      --vscode-textBlockQuote-background: #222222;
+      --vscode-menu-background: #252526;
+      --vscode-menu-foreground: #cccccc;
+      --vscode-menu-selectionBackground: #04395e;
+      --vscode-menu-selectionForeground: #ffffff;
+    }
+
+    :root[data-theme="light"] {
+      --vscode-foreground: #3b3b3b;
+      --vscode-sideBar-foreground: #3b3b3b;
+      --vscode-sideBar-background: #f8f8f8;
+      --vscode-descriptionForeground: #616161;
+      --vscode-editor-background: #ffffff;
+      --vscode-editorWidget-background: #f3f3f3;
+      --vscode-widget-border: #d4d4d4;
+      --vscode-toolbar-hoverBackground: #e8e8e8;
+      --vscode-input-background: #ffffff;
+      --vscode-input-foreground: #3b3b3b;
+      --vscode-input-placeholderForeground: #767676;
+      --vscode-input-border: #cecece;
+      --vscode-textBlockQuote-background: #eeeeee;
+      --vscode-button-secondaryBackground: #e5e5e5;
+      --vscode-button-secondaryForeground: #3b3b3b;
+      --vscode-button-secondaryHoverBackground: #d7d7d7;
+      --vscode-menu-background: #ffffff;
+      --vscode-menu-foreground: #3b3b3b;
+      --vscode-menu-selectionBackground: #0060c0;
+      --vscode-menu-selectionForeground: #ffffff;
+      --vscode-list-activeSelectionBackground: #0060c0;
+      --vscode-list-activeSelectionForeground: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div class="brand-lockup">
+        <img class="brand-mark" src="../../logo/grok-fluffy.png" alt="" aria-hidden="true">
+        <h1>Grok Build IDE</h1>
+      </div>
+      <div class="masthead-actions">
+        <button id="sessionsButton" class="icon-button" type="button" aria-label="Sessions" title="Sessions"><span data-icon="menu"></span></button>
+        <button id="connectionButton" class="icon-button" type="button" aria-label="Connect to Grok Build" title="Connect"><span data-icon="plug"></span></button>
+      </div>
+    </header>
+    <div id="status" class="status" role="status" aria-live="polite">
+      <span class="status-dot" aria-hidden="true"></span><span id="statusText">Disconnected</span>
+    </div>
+    <section class="context-panel" aria-label="Grok Build context">
+      <div class="context-row">
+        <button id="workspaceButton" class="context-chip context-workspace" type="button" title="Open Explorer">
+          <span class="context-glyph" data-icon="folder"></span><span id="workspaceName" class="truncate">No workspace</span>
+        </button>
+        <button id="settingsButton" class="context-chip" type="button" title="Open all Grok Build settings"><span class="settings-icon" data-icon="settings"></span><span class="context-chip-label">Settings</span></button>
+        <button id="toolsButton" class="context-chip" type="button" title="MCP, worktree, plugins, doctor">Tools</button>
+        <button id="layoutButton" class="compact-icon-button" type="button" aria-label="Layout and move view" title="Layout and move view"><span data-icon="panels"></span></button>
+      </div>
+      <div class="runtime-row">
+        <span id="sessionInfo" class="truncate" title="No active session">No session</span>
+        <span aria-hidden="true">·</span><span id="runtimeInfo" class="truncate" title="ACP runtime">ACP</span>
+      </div>
+    </section>
+    <section id="planDock" class="plan-dock hidden" aria-label="Active plan"></section>
+    <section id="messages" class="messages" aria-label="Conversation" aria-live="polite">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-mark" aria-hidden="true">&gt;_</div>
+        <h2 id="emptyTitle">Ready for your first task</h2>
+        <p id="emptyDescription">Describe the change you want Grok Build to make. Files and diffs will open in the editor as it works.</p>
+        <button id="emptyConnect" class="secondary-button" type="button" data-action="connect">Connect agent</button>
+      </div>
+    </section>
+    <footer class="composer-shell">
+      <div class="composer-card" id="composerCard">
+        <label class="sr-only" for="prompt">Message Grok Build</label>
+        <textarea id="prompt" rows="2" placeholder="Ask Grok Build…" spellcheck="true"></textarea>
+        <div id="attachments" class="composer-attachments hidden" aria-label="Files attached to the prompt"></div>
+        <div class="composer-actions">
+          <div class="composer-context">
+            <button id="filesButton" class="composer-icon-button" type="button" aria-label="Add context files or images" title="Add context files or images (@)"><span data-icon="plus"></span></button>
+            <div class="composer-menu-control permission-control">
+              <button id="permissionButton" class="composer-menu-button" type="button" aria-label="Permission mode" aria-haspopup="listbox" aria-expanded="false" aria-controls="permissionMenu" title="Permission mode">
+                <span class="permission-icon" data-icon="shieldCheck"></span><span id="permissionLabel" class="composer-menu-label">Ask</span><span class="composer-menu-chevron" data-icon="chevronDown"></span>
+              </button>
+              <div id="permissionMenu" class="composer-menu hidden" role="listbox" aria-label="Permission mode">
+                <button class="composer-menu-option" type="button" role="option" data-value="ask" aria-selected="true">Ask</button>
+                <button class="composer-menu-option" type="button" role="option" data-value="acceptEdits" aria-selected="false">Accept edits</button>
+                <button class="composer-menu-option" type="button" role="option" data-value="auto" aria-selected="false">Auto</button>
+                <button class="composer-menu-option" type="button" role="option" data-value="plan" aria-selected="false">Plan</button>
+                <button class="composer-menu-option" type="button" role="option" data-value="dontAsk" aria-selected="false">Don't ask</button>
+                <button class="composer-menu-option" type="button" role="option" data-value="full" aria-selected="false">Full access</button>
+              </div>
+            </div>
+            <div class="composer-menu-control model-control">
+              <button id="modelButton" class="composer-menu-button" type="button" aria-label="Model" aria-haspopup="listbox" aria-expanded="false" aria-controls="modelMenu" title="Model" disabled>
+                <span class="menu-icon" data-icon="box"></span>
+                <span id="modelLabel" class="composer-menu-label">Default model</span>
+                <span class="composer-menu-chevron" data-icon="chevronDown"></span>
+              </button>
+              <div id="modelMenu" class="composer-menu hidden" role="listbox" aria-label="Model"></div>
+            </div>
+            <div class="composer-menu-control effort-control">
+              <button id="effortButton" class="composer-menu-button" type="button" aria-label="Reasoning effort" aria-haspopup="listbox" aria-expanded="false" aria-controls="effortMenu" title="Reasoning effort">
+                <span class="menu-icon" data-icon="brain"></span>
+                <span id="effortLabel" class="composer-menu-label">Default</span>
+                <span class="composer-menu-chevron" data-icon="chevronDown"></span>
+              </button>
+              <div id="effortMenu" class="composer-menu hidden" role="listbox" aria-label="Reasoning effort"></div>
+            </div>
+            <div class="composer-menu-control mode-control hidden">
+              <button id="modeButton" class="composer-menu-button" type="button" aria-label="Agent mode" aria-haspopup="listbox" aria-expanded="false" aria-controls="modeMenu" title="Agent mode" disabled>
+                <span class="menu-icon" data-icon="listTodo"></span>
+                <span id="modeLabel" class="composer-menu-label">Mode</span>
+                <span class="composer-menu-chevron" data-icon="chevronDown"></span>
+              </button>
+              <div id="modeMenu" class="composer-menu hidden" role="listbox" aria-label="Agent mode"></div>
+            </div>
+          </div>
+          <div class="usage-anchor">
+            <button id="usageButton" class="composer-tool-button" type="button" title="Session context window (ACP)" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Usage</span></button>
+            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Usage">
+              <div class="usage-popover-head">
+                <div>
+                  <strong>Usage</strong>
+                  <span id="usageStatus">Session context and account plan</span>
+                </div>
+                <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh usage" title="Refresh usage"><span data-icon="refreshCw"></span></button>
+              </div>
+              <div class="usage-section">
+                <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
+                <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
+                <span id="usageDetail">Waiting for ACP session context data.</span>
+                <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
+              </div>
+              <div class="usage-section usage-account">
+                <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
+                <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
+                <div id="accountUsageRows" class="usage-rows">
+                  <span class="usage-empty">Open Usage to load your Grok account plan.</span>
+                </div>
+                <span id="accountUsageError" class="usage-error hidden"></span>
+              </div>
+              <div class="usage-actions">
+                <span id="usageFetchedAt">Not refreshed yet</span>
+                <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
+              </div>
+            </div>
+          </div>
+          <button id="micButton" class="composer-tool-button mic-button" type="button" aria-label="Voice input" title="Voice input"><span data-icon="mic"></span></button>
+          <button id="cancel" class="stop-button hidden" type="button"><span data-icon="square"></span><span>Stop</span></button>
+          <button id="send" class="send-button" type="button" aria-label="Send message" title="Send message"><span data-icon="arrowUp"></span></button>
+        </div>
+      </div>
+      <span class="hint">Enter send · Shift+Enter newline · @ or + add context · Paste image (Ctrl+V) · Drop images · Full access still respects filesystem scope</span>
+    </footer>
+  </main>
+  <script>
+    const query = new URLSearchParams(location.search);
+    const theme = query.get("theme") || "dark";
+    const fixture = query.get("fixture") || "empty";
+    document.documentElement.dataset.theme = theme;
+
+    function emit(event) {
+      window.dispatchEvent(new MessageEvent("message", { data: { type: "event", event } }));
+    }
+
+    function emitAccountUsage() {
+      const errorState = fixture === "usage-error";
+      window.dispatchEvent(new MessageEvent("message", {
+        data: {
+          type: "account_usage",
+          state: "ready",
+          data: errorState
+            ? {
+                ok: false,
+                error: "Session expired. Run Grok: Login again.",
+                fetchedAt: "2026-08-09T01:15:00.000Z",
+                manageUrl: "https://grok.com?_s=usage",
+                account: null,
+                plan: null,
+              }
+            : {
+                ok: true,
+                error: null,
+                fetchedAt: "2026-08-09T01:15:00.000Z",
+                manageUrl: "https://grok.com/account/usage",
+                account: { email: "long.account.name@example.com", subscriptionTier: "SuperGrok" },
+                plan: {
+                  limitLabel: "SuperGrok weekly limit",
+                  creditUsagePercent: 37.5,
+                  nextReset: "2026-08-15T00:00:00.000Z",
+                  productUsage: [{ label: "Grok Build", usagePercent: 12 }],
+                  monthlyLimit: null,
+                  used: null,
+                  remaining: null,
+                  onDemandCap: null,
+                  onDemandUsed: null,
+                },
+              },
+        },
+      }));
+    }
+
+    window.__postedMessages = [];
+
+    window.acquireVsCodeApi = () => ({
+      postMessage(message) {
+        window.__postedMessages.push(message);
+        if (message.type === "ready") {
+          setTimeout(() => runFixture(), 0);
+        } else if (message.type === "send") {
+          document.body.dataset.sendCount = String(Number(document.body.dataset.sendCount || "0") + 1);
+          document.body.dataset.sendAttachments = JSON.stringify(message.attachments || []);
+          setTimeout(() => streamFixture(), 0);
+        } else if (message.type === "connect") {
+          document.body.dataset.connectRequested = "true";
+          emit({ type: "state", state: "connected", detail: "ACP session ready" });
+        } else if (message.type === "disconnect") {
+          document.body.dataset.disconnectRequested = "true";
+        } else if (message.type === "refreshUsage") {
+          window.dispatchEvent(new MessageEvent("message", {
+            data: { type: "account_usage", state: "loading" },
+          }));
+          setTimeout(() => emitAccountUsage(), 0);
+        } else if (message.type === "openFolder") {
+          document.body.dataset.openFolderRequested = "true";
+        } else if (message.type === "openExplorer") {
+          document.body.dataset.openExplorerRequested = "true";
+        } else if (message.type === "addContext") {
+          document.body.dataset.addContextRequested = "true";
+          emit({ type: "attachment_added", uri: "file:///H:/projects/grok-code/README.md", name: "README.md" });
+          emit({
+            type: "attachment_added",
+            uri: "file:///H:/projects/grok-code/docs/enterprise-platform-architecture-and-boundary-contract.md",
+            name: "enterprise-platform-architecture-and-boundary-contract.md"
+          });
+        } else if (message.type === "layout") {
+          document.body.dataset.layoutRequested = "true";
+        } else if (message.type === "toolsHub") {
+          document.body.dataset.toolsHubRequested = "true";
+        } else if (message.type === "sessions") {
+          document.body.dataset.sessionsRequested = "true";
+        } else if (message.type === "settings") {
+          document.body.dataset.settingsRequested = "true";
+        } else if (message.type === "permissionResponse") {
+          document.body.dataset.permissionResponse = message.optionId || "cancelled";
+        } else if (message.type === "setPermissionMode") {
+          document.body.dataset.permissionMode = message.mode;
+          emit({
+            type: "context",
+            workspaceName: "grok-code",
+            model: "grok-4.5",
+            reasoningEffort: "High effort",
+            showReasoning: true,
+            permissionMode: message.mode,
+            allowOutsideWorkspace: false,
+            showToolDetails: true,
+            voiceInput: true
+          });
+        } else if (message.type === "setSessionConfig") {
+          document.body.dataset.sessionConfig = `${message.configId}:${message.value}`;
+        } else if (message.type === "setModel") {
+          document.body.dataset.model = message.value;
+        } else if (message.type === "setEffort") {
+          document.body.dataset.effort = message.value;
+        } else if (message.type === "setSessionMode") {
+          document.body.dataset.sessionMode = message.modeId;
+        } else if (message.type === "cancel") {
+          document.body.dataset.cancelRequested = "true";
+        } else if (message.type === "reviewChange") {
+          document.body.dataset.reviewChange = message.changeId;
+        } else if (message.type === "openFile") {
+          document.body.dataset.openFile = message.path;
+        } else if (message.type === "openExternal") {
+          document.body.dataset.openExternal = message.value;
+        }
+      }
+    });
+
+    function runFixture() {
+      if (fixture === "workspace-required") {
+        for (let index = 0; index < 4; index += 1) {
+          emit({ type: "state", state: "workspace_required", detail: "Open a folder to continue" });
+        }
+        return;
+      }
+      if (fixture === "empty") {
+        emit({ type: "state", state: "error", detail: "Grok executable not found" });
+        return;
+      }
+      const longMetadata = fixture === "metadata-long";
+      emit({
+        type: "context",
+        workspaceName: longMetadata ? "enterprise-platform-with-an-extremely-long-workspace-name" : "grok-code",
+        model: longMetadata ? "grok-4.5-reasoning-enterprise-preview-with-a-long-name" : "grok-4.5",
+        reasoningEffort: longMetadata ? "Maximum reasoning effort" : "High effort",
+        showReasoning: true,
+        permissionMode: fixture === "full-access" ? "full" : "ask",
+        allowOutsideWorkspace: false,
+        followAgentFiles: true,
+        openDiffOnEdit: true,
+        showToolDetails: true,
+        voiceInput: true
+      });
+      emit({ type: "runtime", protocolVersion: 1, agentName: "Grok Build", agentVersion: "0.2.118" });
+      emit({ type: "state", state: "connected", detail: "ACP session ready" });
+      emit({ type: "session", sessionId: "81f5b741-e66d-4a7f-a10a-b2f3799e27db" });
+      emit({ type: "model_catalog", currentModel: "grok-4.5", defaultModel: "grok-4.5", models: ["grok-4.5", "grok-code-fast"] });
+      emit({ type: "session_config", options: [
+        ...(fixture.startsWith("catalog") ? [] : [{ id: "model", name: "Model", type: "select", category: "model", currentValue: "grok-4.5", options: [
+          { value: "grok-4.5", name: "Grok 4.5" }, { value: "grok-code-fast", name: "Grok Code Fast" }
+        ] }]),
+        { id: "effort", name: "Reasoning effort", type: "select", category: "thought_level", currentValue: "high", options: [
+          { value: "low", name: "Low" }, { value: "high", name: "High" }
+        ] }
+      ] });
+      emit({ type: "session_modes", currentModeId: "code", modes: [
+        { id: "code", name: "Code" }, { id: "plan", name: "Plan" }
+      ] });
+      emit({ type: "usage", used: 32000, size: 128000 });
+      if (fixture === "manual" || fixture === "catalog-manual") {
+        return;
+      }
+      const prompt = document.getElementById("prompt");
+      prompt.value = fixture === "long" || fixture === "metadata-long"
+        ? "Review the complete workspace, explain the architecture, find boundary failures, then implement a safe correction without changing unrelated files. Include a concise verification summary."
+        : "Add input validation and tests to the active feature.";
+      document.getElementById("send").click();
+    }
+
+    function streamFixture() {
+      emit({ type: "state", state: "running", detail: "Grok Build is working" });
+      emit({ type: "assistant_delta", messageId: "assistant-1", text: "I’ll inspect the current implementation and verify the change in place." });
+      emit({ type: "thought_delta", messageId: "thought-1", text: "Inspecting the workspace structure and tracing the request lifecycle before making changes." });
+      emit({ type: "plan", entries: [
+        { content: "Inspect the current implementation and tests", status: "completed" },
+        { content: "Implement the governing validation rule", status: "in_progress" },
+        { content: "Run focused and integration checks", status: "pending" }
+      ] });
+      emit({ type: "tool", toolCallId: "tool-1", title: "Search workspace for validation boundaries", kind: "search", status: "in_progress", locations: [
+        { path: "H:\\projects\\grok-code\\extensions\\grok-build-workbench\\src\\vscode\\grokController.ts", line: 81 }
+      ] });
+      if (fixture === "permission" || fixture === "long") {
+        emit({ type: "permission_request", requestId: "permission-1", toolCallId: "tool-1", title: "Run pnpm test in the workspace", kind: "execute", options: [
+          { optionId: "allow-once", name: "Allow once", kind: "allow_once" },
+          { optionId: "allow-always", name: "Always allow", kind: "allow_always" },
+          { optionId: "reject", name: "Reject", kind: "reject_once" }
+        ] });
+      }
+      emit({ type: "tool_update", toolCallId: "tool-1", kind: "edit", status: "completed", locations: [
+        { path: "H:\\projects\\grok-code\\extensions\\grok-build-workbench\\src\\vscode\\grokController.ts", line: 81 }
+      ] });
+      emit({ type: "workspace_edit", changeId: "change-1", path: "H:\\projects\\grok-code\\extensions\\grok-build-workbench\\src\\vscode\\grokController.ts", source: "acp_diff" });
+      const text = fixture === "long" || fixture === "markdown"
+        ? "## Validation complete\n\nI found the **shared validation boundary** and moved the rule there so every caller receives the same result.\n\n- Empty input is rejected\n- The longest supported value passes\n- Invalid encoding reports a clear error\n\n> Editor behavior remains unchanged.\n\n```ts\nconst result = validate(input);\n```\n\n| Check | Result |\n| --- | --- |\n| Typecheck | Passed |\n| Tests | Passed |\n\nSee [verification notes](https://example.com/verification)."
+        : "The **validation rule** and focused regression tests are in place. The session remains ready for the next turn.";
+      emit({ type: "assistant_delta", messageId: "assistant-1", text });
+      if (fixture === "typical" || fixture === "markdown") {
+        emit({ type: "turn_complete", stopReason: "end_turn" });
+        emit({ type: "state", state: "connected", detail: "Turn completed: end_turn" });
+      }
+    }
+  </script>
+  <script src="../../media/timeline.js?v=1"></script>
+  <script src="../../media/markdown.js?v=11"></script>
+  <script src="../../media/main.js?v=11"></script>
+</body>
+</html>
