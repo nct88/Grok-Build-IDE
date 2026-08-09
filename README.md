@@ -1,78 +1,361 @@
-# Visual Studio Code - Open Source ("Code - OSS")
-[![Feature Requests](https://img.shields.io/github/issues/microsoft/vscode/feature-request.svg)](https://github.com/microsoft/vscode/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-[![Bugs](https://img.shields.io/github/issues/microsoft/vscode/bug.svg)](https://github.com/microsoft/vscode/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Abug)
-[![Gitter](https://img.shields.io/badge/chat-on%20gitter-yellow.svg)](https://gitter.im/Microsoft/vscode)
+# Grok Build IDE
 
-## The Repository
+Grok Build IDE là trình soạn thảo mã nguồn tùy chọn dựa trên **Code - OSS**, tích hợp sẵn giao diện **Grok Build Workbench** và kết nối với **Grok CLI chính thức** qua ACP (`grok agent stdio`). Sản phẩm dành cho người dùng cần đầy đủ Explorer, editor, terminal, Source Control và debug bên cạnh trải nghiệm agent.
 
-This repository ("`Code - OSS`") is where we (Microsoft) develop the [Visual Studio Code](https://code.visualstudio.com) product together with the community. Not only do we work on code and issues here, but we also publish our [roadmap](https://github.com/microsoft/vscode/wiki/Roadmap), [monthly iteration plans](https://github.com/microsoft/vscode/wiki/Iteration-Plans), and our [endgame plans](https://github.com/microsoft/vscode/wiki/Running-the-Endgame). This source code is available to everyone under the standard [MIT license](https://github.com/microsoft/vscode/blob/main/LICENSE.txt).
+> Grok Build IDE là repository độc lập. Ứng dụng agent desktop chính nằm tại [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
 
-## Visual Studio Code
+Phiên bản hiện tại: **1.0.6** — xem [`build/grok/VERSION`](build/grok/VERSION).
 
-<p align="center">
-  <img alt="VS Code in action" src="https://github.com/user-attachments/assets/56af271c-949d-454c-a3ea-16188c063414">
-</p>
+## Tải xuống
 
-[Visual Studio Code](https://code.visualstudio.com) is a distribution of the `Code - OSS` repository with Microsoft-specific customizations released under a traditional [Microsoft product license](https://code.visualstudio.com/License/).
+Release hiện tại nằm trong repository private và yêu cầu tài khoản GitHub có quyền truy cập:
 
-[Visual Studio Code](https://code.visualstudio.com) combines the simplicity of a code editor with what developers need for their core edit-build-debug cycle. It provides comprehensive code editing, navigation, and understanding support along with lightweight debugging, a rich extensibility model, and lightweight integration with existing tools.
+| Gói | Mục đích | Tải xuống |
+|---|---|---|
+| Inno Setup | Cài đặt đầy đủ trên Windows | [Grok-Build-IDE-Setup-1.0.6.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-Setup-1.0.6.exe) |
+| Portable EXE | File chạy portable tự giải nén | [Grok-Build-IDE-1.0.6-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-1.0.6-win32-x64-portable.exe) |
+| Portable ZIP | Giải nén một lần để sử dụng lâu dài | [Grok-Build-IDE-1.0.6-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-1.0.6-win32-x64-portable.zip) |
+| VSIX Update | Cập nhật riêng Grok Build Workbench | [grok-build-workbench-1.0.6.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/grok-build-workbench-1.0.6.vsix) |
+| Manifest | Kích thước và SHA-256 của artifact | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/MANIFEST.json) |
 
-Visual Studio Code is updated monthly with new features and bug fixes. You can download it for Windows, macOS, and Linux on [Visual Studio Code's website](https://code.visualstudio.com/Download). To get the latest releases every day, install the [Insiders build](https://code.visualstudio.com/insiders).
+Trang release: [Grok Build IDE v1.0.6](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.6).
 
-## Contributing
+Các executable Windows hiện chưa được ký Authenticode. SmartScreen có thể cảnh báo trong lần chạy đầu; hãy kiểm tra SHA-256 trong `MANIFEST.json` trước khi chạy.
 
-There are many ways in which you can participate in this project, for example:
+## Grok Build và Grok Build IDE khác nhau thế nào?
 
-* [Submit bugs and feature requests](https://github.com/microsoft/vscode/issues), and help us verify as they are checked in
-* Review [source code changes](https://github.com/microsoft/vscode/pulls)
-* Review the [documentation](https://github.com/microsoft/vscode-docs) and make pull requests for anything from typos to new content.
+| Sản phẩm | Mục tiêu | Nên dùng khi |
+|---|---|---|
+| **Grok Build** | Giao diện agent desktop, tập trung vào hội thoại và điều phối | Bạn muốn trải nghiệm agent gọn, không cần toàn bộ IDE |
+| **Grok Build IDE** | Code - OSS với Grok Workbench tích hợp | Bạn muốn editor, Explorer, terminal, SCM, debug và agent trong cùng cửa sổ |
+| **Grok CLI** | Agent engine, xác thực, session và tool loop | Thành phần bắt buộc cho cả Desktop và IDE |
 
-If you are interested in fixing issues and contributing directly to the code base,
-please see the document [How to Contribute](https://github.com/microsoft/vscode/wiki/How-to-Contribute), which covers the following:
+Hai giao diện dùng chung ranh giới runtime:
 
-* [How to build and run from source](https://github.com/microsoft/vscode/wiki/How-to-Contribute)
-* [The development workflow, including debugging and running tests](https://github.com/microsoft/vscode/wiki/How-to-Contribute#debugging)
-* [Coding guidelines](https://github.com/microsoft/vscode/wiki/Coding-Guidelines)
-* [Submitting pull requests](https://github.com/microsoft/vscode/wiki/How-to-Contribute#pull-requests)
-* [Finding an issue to work on](https://github.com/microsoft/vscode/wiki/How-to-Contribute#where-to-contribute)
-* [Contributing to translations](https://aka.ms/vscodeloc)
+```text
+Grok Build IDE (Code - OSS)
+    → extension: extensions/grok-build-workbench
+        → ACP client/controller
+            → grok agent stdio
+                → ~/.grok (xác thực, phiên và cấu hình CLI)
+```
 
-## Feedback
+## Tính năng chính
 
-* Ask a question on [Stack Overflow](https://stackoverflow.com/questions/tagged/vscode)
-* [Request a new feature](CONTRIBUTING.md)
-* Upvote [popular feature requests](https://github.com/microsoft/vscode/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-* [File an issue](https://github.com/microsoft/vscode/issues)
-* Connect with the extension author community on [GitHub Discussions](https://github.com/microsoft/vscode-discussions/discussions) or [Slack](https://aka.ms/vscode-dev-community)
-* Follow [@code](https://x.com/code) and let us know what you think!
+### Môi trường phát triển Code - OSS
 
-See our [wiki](https://github.com/microsoft/vscode/wiki/Feedback-Channels) for a description of each of these channels and information on some other available community-driven channels.
+- Explorer, editor nhiều tab, tìm kiếm và điều hướng mã nguồn.
+- Terminal tích hợp, Source Control, diff editor và debug surface.
+- Hệ thống command, settings, keybinding và extension của Code - OSS.
+- Nhận diện sản phẩm, icon, installer và thư mục dữ liệu riêng với VS Code.
 
-## Related Projects
+### Grok Build Workbench
 
-Many of the core components and extensions to VS Code live in their own repositories on GitHub. For example, the [node debug adapter](https://github.com/microsoft/vscode-node-debug) and the [mono debug adapter](https://github.com/microsoft/vscode-mono-debug) repositories are separate from each other. For a complete list, please visit the [Related Projects](https://github.com/microsoft/vscode/wiki/Related-Projects) page on our [wiki](https://github.com/microsoft/vscode/wiki).
+- Chat với Grok CLI qua ACP ngay trong sidebar.
+- Hiển thị Markdown, thinking, tool activity, trạng thái lượt chạy và lỗi.
+- Chọn permission mode, model, reasoning effort và session mode.
+- Tạo phiên mới, xem danh sách session, nạp/tiếp tục session và đổi tên session.
+- Theo dõi file agent mở/chỉnh sửa; có thể mở diff khi agent sửa tệp.
+- Reverse filesystem/terminal RPC được giới hạn theo workspace và policy.
+- Lối tắt cho MCP, worktree, plugin, login/logout, doctor và CLI config.
+- Hiển thị context token, usage tài khoản và liên kết quản lý usage an toàn.
+- Hỗ trợ theme sáng/tối và giao diện responsive trong sidebar hẹp.
 
-## Bundled Extensions
+### Chuyển đổi giữa hai sản phẩm
 
-VS Code includes a set of built-in extensions located in the [extensions](extensions) folder, including grammars and snippets for many languages. Extensions that provide rich language support (inline suggestions, Go to Definition) for a language have the suffix `language-features`. For example, the `json` extension provides coloring for `JSON` and the `json-language-features` extension provides rich language support for `JSON`.
+- **Open Grok Build** mở ứng dụng agent desktop.
+- **Open Grok Build IDE** quay lại giao diện IDE.
+- Product surface mặc định của package IDE là `grok-build-ide`.
+- Agent-first layout trong IDE là tùy chọn; lựa chọn gần nhất được ghi nhớ.
 
-## Development Container
+## Yêu cầu hệ thống
 
-This repository includes a Visual Studio Code Dev Containers / GitHub Codespaces development container.
+### Người dùng
 
-* For [Dev Containers](https://aka.ms/vscode-remote/download/containers), use the **Dev Containers: Clone Repository in Container Volume...** command which creates a Docker volume for better disk I/O on macOS and Windows.
-  * If you already have VS Code and Docker installed, you can also click [here](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/vscode) to get started. This will cause VS Code to automatically install the Dev Containers extension if needed, clone the source code into a container volume, and spin up a dev container for use.
+- Windows x64 cho các artifact phát hành hiện tại.
+- Grok CLI đã được cài và xác thực.
+- Quyền đọc/ghi đối với workspace đang mở theo chính sách đã chọn.
 
-* For Codespaces, install the [GitHub Codespaces](https://marketplace.visualstudio.com/items?itemName=GitHub.codespaces) extension in VS Code, and use the **Codespaces: Create New Codespace** command.
+Kiểm tra CLI trước khi chạy IDE:
 
-Docker / the Codespace should have at least **4 cores and 6 GB of RAM (8 GB recommended)** to run a full build. See the [development container README](.devcontainer/README.md) for more information.
+```powershell
+grok --version
+grok login
+grok doctor
+```
 
-## Code of Conduct
+Extension tìm CLI theo cấu hình `grokBuild.executablePath`, `PATH` và vị trí cài đặt người dùng phổ biến của Grok CLI.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+### Phát triển và đóng gói
 
-## License
+- Node.js theo [`.nvmrc`](.nvmrc) — hiện là 24.15.0.
+- npm và toolchain Code - OSS.
+- Windows SDK/toolchain cần thiết cho phần native của Code - OSS.
+- .NET SDK cho portable single-file launcher.
+- Inno Setup cho installer Windows.
+- Một base release candidate hợp lệ khi dùng pipeline tái sử dụng payload.
 
-Copyright (c) Microsoft Corporation. All rights reserved.
+## Cài đặt và bắt đầu nhanh
 
-Licensed under the [MIT](LICENSE.txt) license.
+### Cách 1: Inno Setup
+
+1. Tải `Grok-Build-IDE-Setup-1.0.6.exe`.
+2. Đối chiếu checksum với `MANIFEST.json`.
+3. Chạy installer.
+4. Mở **Grok Build IDE** từ Start Menu.
+5. Chọn **Open Folder** và mở workspace.
+6. Mở Grok Build ở sidebar, kiểm tra mode/quyền rồi kết nối.
+
+Đường dẫn cài mặc định:
+
+```text
+%LOCALAPPDATA%\Programs\Grok Build IDE\Grok Build IDE.exe
+```
+
+### Cách 2: Portable ZIP
+
+1. Tải và giải nén ZIP vào một thư mục cố định.
+2. Chạy `Grok Build IDE.exe`.
+3. Không di chuyển riêng executable ra khỏi payload vì Electron cần các DLL và thư mục `resources` đi kèm.
+
+### Cách 3: Portable EXE
+
+Portable EXE tự giải nén payload vào cache theo version rồi khởi chạy IDE. Cách này thuận tiện để thử nhanh; ZIP phù hợp hơn khi dùng thường xuyên.
+
+## Cấu hình Grok quan trọng
+
+Mở **Settings** và tìm `Grok Build` hoặc chỉnh các key sau:
+
+| Setting | Ý nghĩa |
+|---|---|
+| `grokBuild.defaultProduct` | Product surface mặc định |
+| `grokBuild.agentFirstLayout` | Bật layout ưu tiên agent trong IDE |
+| `grokBuild.executablePath` | Đường dẫn tùy chỉnh đến Grok CLI |
+| `grokBuild.extraArguments` | Tham số CLI bổ sung |
+| `grokBuild.autoStart` | Tự kết nối khi extension kích hoạt |
+| `grokBuild.model` | Model mặc định |
+| `grokBuild.reasoningEffort` | Mức reasoning mặc định |
+| `grokBuild.permissionMode` | Chính sách xin quyền/chạy tool |
+| `grokBuild.sandbox` | Chế độ sandbox của agent |
+| `grokBuild.tools` | Danh sách tool cho phép |
+| `grokBuild.deniedTools` | Danh sách tool bị từ chối |
+| `grokBuild.worktree` | Bật hoặc cấu hình worktree |
+| `grokBuild.experimentalMemory` | Bật tính năng memory thử nghiệm |
+| `grokBuild.disableWebSearch` | Tắt web search khi cần |
+| `grokBuild.rules` | Rules truyền cho agent |
+| `grokBuild.maxTurns` | Giới hạn số lượt agent |
+| `grokBuild.enableTerminal` | Cho phép reverse terminal host |
+| `grokBuild.allowOutsideWorkspace` | Cho phép truy cập ngoài workspace |
+| `grokBuild.followAgentFiles` | Tự theo file agent đang thao tác |
+| `grokBuild.openDiffOnEdit` | Mở diff khi agent chỉnh sửa |
+| `grokBuild.voiceInput` | Hiển thị voice input khi runtime hỗ trợ |
+
+Không đặt token hoặc credential vào setting đồng bộ/chia sẻ. Xác thực chính vẫn thuộc Grok CLI.
+
+## Chạy và phát triển extension Grok Workbench
+
+Cài dependency ở repository root theo quy trình Code - OSS:
+
+```powershell
+git clone https://github.com/nct88/Grok-Build-IDE.git
+cd Grok-Build-IDE
+npm install
+```
+
+Kiểm tra riêng extension:
+
+```powershell
+npm --prefix extensions/grok-build-workbench run typecheck
+npm --prefix extensions/grok-build-workbench test
+npm --prefix extensions/grok-build-workbench run build
+```
+
+Chạy toàn bộ gate của extension:
+
+```powershell
+npm --prefix extensions/grok-build-workbench run check
+```
+
+Gate này bao gồm:
+
+1. TypeScript typecheck.
+2. Vitest unit/integration tests.
+3. Production bundle.
+4. Hợp đồng release/branding.
+5. Visual webview scenarios ở light/dark và nhiều kích thước.
+
+## Kiến trúc repository
+
+```text
+grok-build-ide/
+├─ src/                              Code - OSS workbench source
+├─ extensions/
+│  └─ grok-build-workbench/          ACP controller, webview và Grok UI
+├─ build/                            Build scripts và nhận diện sản phẩm
+│  └─ grok/VERSION                   Version phát hành Grok Build IDE
+├─ resources/                        Icon và tài nguyên theo nền tảng
+├─ scripts/
+│  ├─ grok-release/                  Release orchestrator/publisher
+│  ├─ build-grok-workbench-*.ps1     Tạo payload, launcher và installer
+│  └─ verify-*.ps1                   Cổng kiểm tra artifact/runtime
+├─ docs/                             Kiến trúc, báo cáo và vận hành
+├─ fix-bug/FIX_LOG.md                Lịch sử thay đổi Grok-specific
+├─ product.json                      Product identity của IDE
+├─ packaging.json                    Hợp đồng đóng gói
+└─ dist/                             Artifact cục bộ theo version
+```
+
+### Ranh giới runtime
+
+- Code - OSS cung cấp editor shell.
+- Grok-specific runtime/UI nằm trong `extensions/grok-build-workbench`.
+- Grok CLI là child process sở hữu agent loop và kết nối dịch vụ.
+- Extension không lưu bản sao token Grok trong webview.
+- Truy cập filesystem ngoài workspace bị từ chối mặc định, trừ policy/override được kiểm chứng.
+
+Xem [`docs/grok-workbench/ARCHITECTURE.md`](docs/grok-workbench/ARCHITECTURE.md).
+
+## Build và phát hành
+
+Version phải đồng bộ giữa:
+
+- `build/grok/VERSION`.
+- `extensions/grok-build-workbench/package.json`.
+- Tham số `-Version` của release command.
+
+Lệnh phát hành chuẩn:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File scripts\grok-release\build-and-publish.ps1 `
+  -Version <semver>
+```
+
+Nếu không có base candidate phù hợp, truyền rõ đường dẫn:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File scripts\grok-release\build-and-publish.ps1 `
+  -Version <semver> `
+  -BaseCandidateRoot <duong-dan-payload-hop-le>
+```
+
+Mỗi version là bất biến; pipeline dừng nếu `dist/<version>` đã tồn tại.
+
+```text
+dist/<version>/
+├─ install/
+│  └─ Grok-Build-IDE-Setup-<version>.exe
+├─ portable/
+│  ├─ Grok-Build-IDE-<version>-win32-x64-portable.exe
+│  └─ Grok-Build-IDE-<version>-win32-x64-portable.zip
+├─ update/
+│  ├─ grok-build-workbench-<version>.vsix
+│  └─ apply-update.ps1
+├─ MANIFEST.json
+└─ latest.json
+```
+
+Pipeline release kiểm tra đủ portable EXE, portable ZIP, installer và VSIX trước khi xuất bản metadata. Chế độ public yêu cầu HTTPS và chữ ký Authenticode hợp lệ.
+
+## Cập nhật riêng extension
+
+Gói `update/` cho phép cập nhật Grok Build Workbench mà không cài lại toàn bộ IDE:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\apply-update.ps1 `
+  -InstallRoot "$env:LOCALAPPDATA\Programs\Grok Build IDE"
+```
+
+Đóng toàn bộ cửa sổ IDE trước khi cập nhật và mở lại sau khi script hoàn tất.
+
+## Kiểm tra artifact cuối
+
+Các script quan trọng:
+
+| Script | Mục đích |
+|---|---|
+| `scripts/check-grok-brand-assets.ps1` | Kiểm tra bộ nhận diện và icon |
+| `scripts/check-grok-release-contract.mjs` | Kiểm tra version, tên và hợp đồng release |
+| `scripts/verify-portable-extension-registry.ps1` | Kiểm tra extension registry trong payload |
+| `scripts/verify-grok-workbench-portable-settings.ps1` | Kiểm tra portable settings |
+| `scripts/verify-grok-workbench-single-exe.ps1` | Kiểm tra launcher/payload |
+| `scripts/test-grok-workbench-single-exe-runtime.ps1` | Chạy smoke test trên executable cuối |
+
+Build thành công không tự chứng minh runtime hoặc giao diện đúng. Release chỉ nên được xem là đã kiểm chứng khi các gate trên chạy với chính artifact cuối.
+
+## Bảo mật và quyền riêng tư
+
+- Token xác thực thuộc Grok CLI/Extension Host và không được gửi sang webview.
+- URL bên ngoài phải vượt qua policy HTTPS/localhost phù hợp; URL chứa credential bị từ chối.
+- Filesystem, editor follow và diff review mặc định bị giới hạn theo workspace.
+- `allowOutsideWorkspace` là quyền mở rộng rõ ràng, không nên bật mặc định.
+- Không commit `.env`, auth file, cookie database, private key, token hoặc log chứa thông tin cá nhân.
+- Workspace Trust và portable defaults phải được kiểm tra trên artifact, không chỉ trong source.
+
+## Khắc phục sự cố
+
+### Grok sidebar không kết nối
+
+```powershell
+grok --version
+grok login
+grok doctor
+```
+
+Sau đó kiểm tra `grokBuild.executablePath` và mở lại cửa sổ IDE.
+
+### Sidebar không xuất hiện
+
+- Mở Activity Bar và chọn Grok Build.
+- Chạy command **Grok Build: Connect** hoặc **Grok Build: New Session**.
+- Kiểm tra extension `grok-build-workbench` đã được cài/đăng ký trong profile portable.
+
+### Portable EXE khởi động chậm lần đầu
+
+Launcher cần giải nén payload vào cache theo version. Những lần sau sẽ tái sử dụng cache nếu các file quan trọng còn hợp lệ.
+
+### Installer/portable hiện SmartScreen
+
+Executable hiện chưa ký số. Chỉ chạy artifact từ release chính thức sau khi SHA-256 khớp `MANIFEST.json`.
+
+### Update VSIX chưa có hiệu lực
+
+Đóng toàn bộ IDE trước khi chạy `apply-update.ps1`, kiểm tra đúng `InstallRoot`, sau đó khởi động lại.
+
+### Workflow GitHub Actions báo lỗi clone private repository
+
+Một số workflow Code - OSS upstream giả định repository công khai hoặc token có quyền clone. Với repository private, cần cấp `contents: read` đúng phạm vi hoặc tắt workflow không dùng cho Grok Build IDE.
+
+## Tài liệu liên quan
+
+| Tài liệu | Nội dung |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Phạm vi dự án và lệnh release chuẩn |
+| [`docs/grok-workbench/ARCHITECTURE.md`](docs/grok-workbench/ARCHITECTURE.md) | Kiến trúc Code - OSS/Grok extension |
+| [`docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md`](docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md) | Luồng tự host và tính năng extension |
+| [`docs/ops/BUILD_AND_DIST.md`](docs/ops/BUILD_AND_DIST.md) | Ghi chú vận hành build/dist |
+| [`fix-bug/FIX_LOG.md`](fix-bug/FIX_LOG.md) | Lịch sử sửa lỗi và release |
+| [`SECURITY.md`](SECURITY.md) | Chính sách báo cáo vấn đề bảo mật |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Hướng dẫn đóng góp Code - OSS |
+
+## Đóng góp
+
+- Thay đổi Grok-specific nên tập trung trong `extensions/grok-build-workbench`, `build/grok`, `scripts/grok-release`, tài nguyên nhận diện và tài liệu liên quan.
+- Không phá vỡ bố cục chuẩn của Code - OSS: `src`, `extensions`, `build`, `resources`, `cli`, `remote`, `test`.
+- Chạy gate extension và kiểm tra artifact phù hợp trước khi mở Pull Request.
+- Không đưa artifact lớn, cache build, secret hoặc dữ liệu người dùng vào commit.
+- Các vấn đề thuộc Code - OSS upstream nên được đối chiếu với [`microsoft/vscode`](https://github.com/microsoft/vscode).
+
+## Nguồn gốc và giấy phép
+
+Repository này được xây dựng trên mã nguồn **Code - OSS** của Microsoft và giữ bố cục/toolchain tương thích với upstream.
+
+- Code - OSS được cấp phép theo [`LICENSE.txt`](LICENSE.txt) — MIT License.
+- Thông báo phụ thuộc bên thứ ba nằm trong [`ThirdPartyNotices.txt`](ThirdPartyNotices.txt).
+- Hướng dẫn đóng góp upstream nằm trong [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Visual Studio Code là bản phân phối riêng của Microsoft với các tùy chỉnh và giấy phép sản phẩm riêng. Grok Build IDE không phải Visual Studio Code và không được tuyên bố là sản phẩm chính thức của Microsoft.
+
+Grok CLI và các model Grok thuộc chủ sở hữu tương ứng trong hệ sinh thái xAI/Grok. Grok Build IDE là bản tích hợp độc lập sử dụng CLI chính thức qua ACP; không tuyên bố liên kết chính thức nếu chưa có xác nhận bằng văn bản.
