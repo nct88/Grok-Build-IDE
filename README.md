@@ -1,5 +1,9 @@
 # Grok Build IDE
 
+<p align="center">
+  <a href="./README.en.md">🇬🇧 English</a> | <strong>🇻🇳 Tiếng Việt</strong>
+</p>
+
 Grok Build IDE là trình soạn thảo mã nguồn tùy chọn dựa trên **Code - OSS**, tích hợp sẵn giao diện **Grok Build Workbench** và kết nối với **Grok CLI chính thức** qua ACP (`grok agent stdio`). Sản phẩm dành cho người dùng cần đầy đủ Explorer, editor, terminal, Source Control và debug bên cạnh trải nghiệm agent.
 
 > Grok Build IDE là repository độc lập. Ứng dụng agent desktop chính nằm tại [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).

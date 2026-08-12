@@ -13,3 +13,5 @@ Public, versioned changes for Grok Build IDE.
   Copilot extension, with a CI regression gate.
 - Updated compatible production dependencies to remove all known critical and
   high-severity audit findings.
+- Added complete English/Vietnamese README pages with a centered language
+  switch and a release-contract parity check.
