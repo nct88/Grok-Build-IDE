@@ -15,7 +15,6 @@ export const dirs = [
 	'build/vite',
 	'extensions',
 	'extensions/configuration-editing',
-	'extensions/copilot',
 	'extensions/css-language-features',
 	'extensions/css-language-features/server',
 	'extensions/debug-auto-launch',
@@ -26,6 +25,7 @@ export const dirs = [
 	'extensions/git-base',
 	'extensions/github',
 	'extensions/github-authentication',
+	'extensions/grok-build-workbench',
 	'extensions/grunt',
 	'extensions/gulp',
 	'extensions/html-language-features',
@@ -53,17 +53,6 @@ export const dirs = [
 	'extensions/vscode-colorize-tests',
 	'extensions/vscode-colorize-perf-tests',
 	'extensions/vscode-test-resolver',
-	'remote',
-	'remote/web',
-	'test/automation',
-	'test/integration/browser',
-	'test/monaco',
-	'test/smoke',
-	'test/mcp',
-	'.vscode/extensions/vscode-selfhost-import-aid',
-	'.vscode/extensions/vscode-selfhost-test-provider',
-	'.vscode/extensions/vscode-extras',
-	'.vscode/extensions/vscode-pr-pinger',
 ];
 
 if (existsSync(`${import.meta.dirname}/../../.build/distro/npm`)) {

@@ -8,6 +8,7 @@ pushd %~dp0\..
 :: Get electron, compile, built-in extensions
 if "%VSCODE_SKIP_PRELAUNCH%"=="" (
 	node build/lib/preLaunch.ts
+	if errorlevel 1 exit /b 1
 )
 
 set "NAMESHORT="

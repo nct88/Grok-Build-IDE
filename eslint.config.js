@@ -11,12 +11,17 @@ import tseslint from 'typescript-eslint';
 
 import stylisticTs from '@stylistic/eslint-plugin-ts';
 import * as pluginLocal from './.eslint-plugin-local/index.ts';
-import * as pluginCopilotLocal from './extensions/copilot/.eslintplugin/index.ts';
 import pluginImport from 'eslint-plugin-import';
 import pluginJsdoc from 'eslint-plugin-jsdoc';
 
 import pluginHeader from 'eslint-plugin-header';
 pluginHeader.rules.header.meta.schema = false;
+
+// The bundled Copilot extension is intentionally not part of Grok Build IDE.
+// Its path-scoped rules below are therefore inert, but ESLint still evaluates
+// static imports while loading this config. Keep a placeholder plugin so the
+// remaining Code - OSS sources can be linted without the removed directory.
+const pluginCopilotLocal = { rules: {} };
 
 const ignores = fs.readFileSync(path.join(import.meta.dirname, '.eslint-ignore'), 'utf8')
 	.toString()

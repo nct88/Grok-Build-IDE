@@ -35,18 +35,24 @@ dist
 .playwright-cli
 .playwright-mcp
 .claude/
-.agents/agents/*.local.md
-.github/agents/*.local.md
-.agents/agents/*.local.agent.md
-.github/agents/*.local.agent.md
-.agents/hooks/*.local.json
-.github/hooks/*.local.json
-.agents/instructions/*.local.instructions.md
-.github/instructions/*.local.instructions.md
-.agents/prompts/*.local.prompt.md
-.github/prompts/*.local.prompt.md
-.agents/skills/.local/
-.github/skills/.local/
+/.agents/
+/.config/
+/.devcontainer/
+/AGENTS.md
+/fix-bug/
+/docs/grok-workbench/
+/docs/ops/
+/logo/generated/
+/logo/source-processed/
+/logo/preview-black-white.png
+/.vscode/extensions/
+/.vscode/notebooks/
+/.vscode/searches/
+/.vscode/mcp.json
+/.git-blame-ignore-revs
+/.lsifrc.json
+/.mailmap
+/.mention-bot
 
 # Grok Build published artifacts (local dist channels)
 dist/

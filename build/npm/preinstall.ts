@@ -46,8 +46,8 @@ const npmUserAgent = process.env.npm_config_user_agent;
 const npmVersionMatch = npmUserAgent?.match(/npm\/(\d+)\.(\d+)\.(\d+)/);
 if (npmVersionMatch) {
 	const npmMajor = parseInt(npmVersionMatch[1]);
-	if (npmMajor >= 12) {
-		console.error(`\x1b[1;31m*** Please use npm version < 12.0.0. Currently using v${npmUserAgent}.\x1b[0;0m`);
+	if (npmMajor !== 11) {
+		console.error(`\x1b[1;31m*** Please use npm 11 (bundled with the Node.js version in .nvmrc). Currently using ${npmUserAgent}.\x1b[0;0m`);
 		throw new Error();
 	}
 }
@@ -61,10 +61,8 @@ if (!process.env['VSCODE_FORCE_INSTALL'] && isUpToDate()) {
 
 if (process.platform === 'win32') {
 	if (!hasSupportedVisualStudioVersion()) {
-		console.error('\x1b[1;31m*** Invalid C/C++ Compiler Toolchain. Please check https://github.com/microsoft/vscode/wiki/How-to-Contribute#prerequisites.\x1b[0;0m');
-		console.error('\x1b[1;31m*** If you have Visual Studio installed in a custom location, you can specify it via the environment variable:\x1b[0;0m');
-		console.error('\x1b[1;31m*** set vs2022_install=<path> (or vs2019_install for older versions)\x1b[0;0m');
-		throw new Error();
+		console.warn('\x1b[1;33m*** Visual Studio C++ Build Tools were not detected. npm will continue with prebuilt native packages.\x1b[0;0m');
+		console.warn('\x1b[1;33m*** Install the Build Tools only if npm later reports that a native dependency must be compiled.\x1b[0;0m');
 	}
 }
 

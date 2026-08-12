@@ -113,7 +113,7 @@ jobs:
         displayName: Restore registry URLs in package-lock.json
         condition: and(succeeded(), ne(variables['NPM_REGISTRY'], 'none'), eq(variables['SHOULD_VALIDATE'], 'true'))
 
-      - script: .github/workflows/check-clean-git-state.sh
+      - script: build/azure-pipelines/common/check-clean-git-state.sh
         displayName: Check clean git state
         condition: and(succeeded(), eq(variables['SHOULD_VALIDATE'], 'true'))
 

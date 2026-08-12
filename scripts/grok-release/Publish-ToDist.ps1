@@ -69,8 +69,8 @@ $vsix = Copy-ChannelFile $vsixSrc.FullName $updateDir 'update'
 $applyTemplate = Join-Path $ProjectRoot 'scripts\templates\apply-update.ps1'
 if (-not (Test-Path -LiteralPath $applyTemplate)) { throw "Missing apply-update template: $applyTemplate" }
 Copy-Item -LiteralPath $applyTemplate -Destination (Join-Path $updateDir 'apply-update.ps1')
-$fixLog = Join-Path $ProjectRoot 'fix-bug\FIX_LOG.md'
-if (Test-Path -LiteralPath $fixLog) { Copy-Item -LiteralPath $fixLog -Destination (Join-Path $updateDir 'FIX_LOG.md') }
+$changeLog = Join-Path $ProjectRoot 'CHANGELOG.md'
+if (Test-Path -LiteralPath $changeLog) { Copy-Item -LiteralPath $changeLog -Destination (Join-Path $updateDir 'CHANGELOG.md') }
 
 $publishedAt = (Get-Date).ToString('o')
 $manifest = [ordered]@{

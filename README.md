@@ -89,7 +89,7 @@ Extension tìm CLI theo cấu hình `grokBuild.executablePath`, `PATH` và vị 
 ### Phát triển và đóng gói
 
 - Node.js theo [`.nvmrc`](.nvmrc) — hiện là 24.15.0.
-- npm và toolchain Code - OSS.
+- npm 11 đi kèm Node.js trong `.nvmrc` và toolchain Code - OSS.
 - Windows SDK/toolchain cần thiết cho phần native của Code - OSS.
 - .NET SDK cho portable single-file launcher.
 - Inno Setup cho installer Windows.
@@ -152,28 +152,25 @@ Mở **Settings** và tìm `Grok Build` hoặc chỉnh các key sau:
 
 Không đặt token hoặc credential vào setting đồng bộ/chia sẻ. Xác thực chính vẫn thuộc Grok CLI.
 
-## Chạy và phát triển extension Grok Workbench
+## Chạy từ mã nguồn
 
-Cài dependency ở repository root theo quy trình Code - OSS:
+Clone repository, cài dependency và khởi động ứng dụng bằng giao diện npm chuẩn:
 
 ```powershell
 git clone https://github.com/nct88/Grok-Build-IDE.git
 cd Grok-Build-IDE
 npm install
+npm start
 ```
 
-Kiểm tra riêng extension:
+`npm start` gọi launcher Code - OSS phù hợp với hệ điều hành, thực hiện
+prelaunch compile cần thiết và mở Grok Build IDE. Có thể truyền tham số ứng
+dụng sau `--`, ví dụ `npm start -- .\my-project`.
+
+Kiểm tra Grok Build Workbench:
 
 ```powershell
-npm --prefix extensions/grok-build-workbench run typecheck
-npm --prefix extensions/grok-build-workbench test
-npm --prefix extensions/grok-build-workbench run build
-```
-
-Chạy toàn bộ gate của extension:
-
-```powershell
-npm --prefix extensions/grok-build-workbench run check
+npm run check:grok
 ```
 
 Gate này bao gồm:
@@ -196,10 +193,11 @@ grok-build-ide/
 ├─ resources/                        Icon và tài nguyên theo nền tảng
 ├─ scripts/
 │  ├─ grok-release/                  Release orchestrator/publisher
+│  ├─ start-grok-build-ide.mjs       npm start launcher
 │  ├─ build-grok-workbench-*.ps1     Tạo payload, launcher và installer
 │  └─ verify-*.ps1                   Cổng kiểm tra artifact/runtime
 ├─ docs/                             Kiến trúc và hướng dẫn vận hành
-├─ fix-bug/FIX_LOG.md                Lịch sử thay đổi Grok-specific
+├─ CHANGELOG.md                      Thay đổi theo phiên bản
 ├─ product.json                      Product identity của IDE
 ├─ packaging.json                    Hợp đồng đóng gói
 └─ dist/                             Artifact cục bộ theo version
@@ -213,7 +211,7 @@ grok-build-ide/
 - Extension không lưu bản sao token Grok trong webview.
 - Truy cập filesystem ngoài workspace bị từ chối mặc định, trừ policy/override được kiểm chứng.
 
-Xem [`docs/grok-workbench/ARCHITECTURE.md`](docs/grok-workbench/ARCHITECTURE.md).
+Xem [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Build và phát hành
 
@@ -324,19 +322,14 @@ Executable hiện chưa ký số. Chỉ chạy artifact từ release chính th�
 
 Đóng toàn bộ IDE trước khi chạy `apply-update.ps1`, kiểm tra đúng `InstallRoot`, sau đó khởi động lại.
 
-### Workflow GitHub Actions báo lỗi clone private repository
-
-Một số workflow Code - OSS upstream giả định repository công khai hoặc token có quyền clone. Với repository private, cần cấp `contents: read` đúng phạm vi hoặc tắt workflow không dùng cho Grok Build IDE.
-
 ## Tài liệu liên quan
 
 | Tài liệu | Nội dung |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | Phạm vi dự án và lệnh release chuẩn |
-| [`docs/grok-workbench/ARCHITECTURE.md`](docs/grok-workbench/ARCHITECTURE.md) | Kiến trúc Code - OSS/Grok extension |
-| [`docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md`](docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md) | Luồng tự host và tính năng extension |
-| [`docs/ops/BUILD_AND_DIST.md`](docs/ops/BUILD_AND_DIST.md) | Ghi chú vận hành build/dist |
-| [`fix-bug/FIX_LOG.md`](fix-bug/FIX_LOG.md) | Changelog kỹ thuật và release |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Kiến trúc Code - OSS/Grok extension |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Cài dependency, chạy source và kiểm tra |
+| [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) | Build và phát hành |
+| [`CHANGELOG.md`](CHANGELOG.md) | Thay đổi theo phiên bản |
 | [`SECURITY.md`](SECURITY.md) | Chính sách báo cáo vấn đề bảo mật |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Hướng dẫn đóng góp Code - OSS |
 

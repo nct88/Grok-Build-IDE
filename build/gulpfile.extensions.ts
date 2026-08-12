@@ -90,11 +90,6 @@ const compilations = [
 	'extensions/vscode-colorize-tests/tsconfig.json',
 	'extensions/vscode-colorize-perf-tests/tsconfig.json',
 	'extensions/vscode-test-resolver/tsconfig.json',
-
-	'.vscode/extensions/vscode-selfhost-test-provider/tsconfig.json',
-	'.vscode/extensions/vscode-selfhost-import-aid/tsconfig.json',
-	'.vscode/extensions/vscode-extras/tsconfig.json',
-	'.vscode/extensions/vscode-pr-pinger/tsconfig.json',
 ];
 
 const getBaseUrl = (out: string) => `https://main.vscode-cdn.net/sourcemaps/${commit}/${out}`;
@@ -282,13 +277,6 @@ task.task(compileNonNativeExtensionsBuildTask);
  */
 export const compileNativeExtensionsBuildTask = task.define('compile-native-extensions-build', () => ext.packageNativeLocalExtensionsStream(false, false).pipe(gulp.dest('.build')));
 task.task(compileNativeExtensionsBuildTask);
-
-/**
- * Compiles the built-in copilot extension for the build.
- * Used by non-CI local builds where copilot is not downloaded as a VSIX.
- */
-export const compileCopilotExtensionBuildTask = task.define('compile-copilot-extension-build', () => ext.packageCopilotExtensionStream(false).pipe(gulp.dest('.build')));
-task.task(compileCopilotExtensionBuildTask);
 
 /**
  * Compiles the extensions for the build.

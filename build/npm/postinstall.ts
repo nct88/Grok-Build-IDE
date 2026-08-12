@@ -13,12 +13,96 @@ import { root, stateFile, stateContentsFile, computeState, computeContents, isUp
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const rootNpmrcConfigKeys = getNpmrcConfigKeys(path.join(root, '.npmrc'));
 
+const windowsNativePackages = [
+	'@parcel/watcher',
+	'@vscode/deviceid',
+	'@vscode/native-watchdog',
+	'@vscode/policy-watcher',
+	'@vscode/ripgrep',
+	'@vscode/spdlog',
+	'@vscode/sqlite3',
+	'@vscode/windows-ca-certs',
+	'@vscode/windows-mutex',
+	'@vscode/windows-process-tree',
+	'@vscode/windows-registry',
+	'bufferutil',
+	'kerberos',
+	'native-is-elevated',
+	'native-keymap',
+	'node-pty',
+	'ssh2',
+	'utf-8-validate',
+	'windows-foreground-love',
+];
+
 function log(dir: string, message: string) {
 	if (process.stdout.isTTY) {
 		console.log(`\x1b[34m[${dir}]\x1b[0m`, message);
 	} else {
 		console.log(`[${dir}]`, message);
 	}
+}
+
+function ensureWindowsNativeModules(): void {
+	if (process.platform !== 'win32') {
+		return;
+	}
+
+	const policyBinding = path.join(root, 'node_modules', '@vscode', 'policy-watcher', 'build', 'Release', 'vscode-policy-watcher.node');
+	if (fs.existsSync(policyBinding)) {
+		return;
+	}
+
+	// Source runs should not require the optional Spectre library component from
+	// Visual Studio. Release builders can still provide that component; this only
+	// removes the explicit node-gyp project requirement from installed packages.
+	for (const packageName of windowsNativePackages) {
+		const packageRoot = path.join(root, 'node_modules', ...packageName.split('/'));
+		if (!fs.existsSync(packageRoot)) {
+			continue;
+		}
+
+		for (const gypFile of findFiles(packageRoot, file => file.endsWith('.gyp'))) {
+			const contents = fs.readFileSync(gypFile, 'utf8');
+			const patched = contents.replace(/["']SpectreMitigation["']\s*:\s*["']Spectre["']/g, '"SpectreMitigation": "false"');
+			if (patched !== contents) {
+				fs.writeFileSync(gypFile, patched);
+			}
+		}
+	}
+
+	log('.', 'Building Windows native modules required by the development application...');
+	const npmCli = process.env['npm_execpath'] ?? path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+	const result = child_process.spawnSync(process.execPath, [npmCli, 'rebuild', ...windowsNativePackages], {
+		cwd: root,
+		stdio: 'inherit',
+		env: {
+			...process.env,
+			npm_config_dangerously_allow_all_scripts: 'true',
+		},
+	});
+	if (result.error) {
+		throw result.error;
+	}
+	if (result.status !== 0) {
+		throw new Error(`Failed to build Windows native modules (exit ${result.status ?? 'unknown'}).`);
+	}
+}
+
+function findFiles(directory: string, predicate: (file: string) => boolean): string[] {
+	const result: string[] = [];
+	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+		if (entry.name === 'node_modules' || entry.name === 'build') {
+			continue;
+		}
+		const fullPath = path.join(directory, entry.name);
+		if (entry.isDirectory()) {
+			result.push(...findFiles(fullPath, predicate));
+		} else if (entry.isFile() && predicate(fullPath)) {
+			result.push(fullPath);
+		}
+	}
+	return result;
 }
 
 function run(command: string, args: string[], opts: child_process.SpawnSyncOptions) {
@@ -186,32 +270,6 @@ function clearInheritedNpmrcConfig(dir: string, env: NodeJS.ProcessEnv): void {
 	}
 }
 
-function ensureAgentHarnessLink(sourceRelativePath: string, linkPath: string): 'existing' | 'junction' | 'symlink' | 'hard link' {
-	if (fs.existsSync(linkPath)) {
-		return 'existing';
-	}
-
-	const sourcePath = path.resolve(path.dirname(linkPath), sourceRelativePath);
-	const isDirectory = fs.statSync(sourcePath).isDirectory();
-
-	try {
-		if (process.platform === 'win32' && isDirectory) {
-			fs.symlinkSync(sourcePath, linkPath, 'junction');
-			return 'junction';
-		}
-
-		fs.symlinkSync(sourceRelativePath, linkPath, isDirectory ? 'dir' : 'file');
-		return 'symlink';
-	} catch (error) {
-		if (process.platform === 'win32' && !isDirectory && (error as NodeJS.ErrnoException).code === 'EPERM') {
-			fs.linkSync(sourcePath, linkPath);
-			return 'hard link';
-		}
-
-		throw error;
-	}
-}
-
 async function runWithConcurrency(tasks: (() => Promise<void>)[], concurrency: number): Promise<void> {
 	const errors: Error[] = [];
 	let index = 0;
@@ -239,9 +297,9 @@ async function runWithConcurrency(tasks: (() => Promise<void>)[], concurrency: n
 
 async function main() {
 	if (!process.env['VSCODE_FORCE_INSTALL'] && isUpToDate()) {
+		ensureWindowsNativeModules();
 		log('.', 'All dependencies up to date, skipping postinstall.');
 		child_process.execSync('git config pull.rebase merges');
-		child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
 		return;
 	}
 
@@ -312,28 +370,12 @@ async function main() {
 	const concurrency = Math.min(os.cpus().length, 8);
 	log('.', `Running ${parallelTasks.length} npm installs with concurrency ${concurrency}...`);
 	await runWithConcurrency(parallelTasks, concurrency);
+	ensureWindowsNativeModules();
 
 	child_process.execSync('git config pull.rebase merges');
-	child_process.execSync('git config blame.ignoreRevsFile .git-blame-ignore-revs');
 
 	fs.writeFileSync(stateFile, JSON.stringify(_state));
 	fs.writeFileSync(stateContentsFile, JSON.stringify(computeContents()));
-
-	// Symlink .claude/ files to their canonical locations to test Claude agent harness
-	const claudeDir = path.join(root, '.claude');
-	fs.mkdirSync(claudeDir, { recursive: true });
-
-	const claudeMdLink = path.join(claudeDir, 'CLAUDE.md');
-	const claudeMdLinkType = ensureAgentHarnessLink(path.join('..', '.github', 'copilot-instructions.md'), claudeMdLink);
-	if (claudeMdLinkType !== 'existing') {
-		log('.', `Created ${claudeMdLinkType} .claude/CLAUDE.md -> .github/copilot-instructions.md`);
-	}
-
-	const claudeSkillsLink = path.join(claudeDir, 'skills');
-	const claudeSkillsLinkType = ensureAgentHarnessLink(path.join('..', '.agents', 'skills'), claudeSkillsLink);
-	if (claudeSkillsLinkType !== 'existing') {
-		log('.', `Created ${claudeSkillsLinkType} .claude/skills -> .agents/skills`);
-	}
 
 	// Temporary: patch @github/copilot-sdk session.js to fix ESM import
 	// (missing .js extension on vscode-jsonrpc/node). Fixed upstream in v0.1.32.
