@@ -36,7 +36,7 @@
 
 ## Baseline 0.1.1 cho yêu cầu 0.2.0
 
-- Runtime screenshot: `%TEMP%\codex-clipboard-<id>.png`.
+- Runtime screenshot: store visual evidence only in the ignored local evidence directory.
 - Build đang chạy: 0.1.1 theo chuỗi bàn giao trước; ảnh 1920×1032, dark theme, Grok view ở Secondary Sidebar bên phải, workspace `grok-app`, real connected conversation.
 - Quan sát: composer Grok dùng input một dòng và action/hint tách bên dưới; không có workspace/model/session/runtime metadata; không có Files/Layout control trong webview; tiêu đề chỉ có text.
 - Ảnh không chứng minh hover/focus, light theme, sidebar nhỏ, lệnh Move View hay native Explorer interaction.

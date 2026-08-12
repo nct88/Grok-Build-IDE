@@ -2,10 +2,8 @@
 
 | Folder | Content |
 |---|---|
-| `product/` | Product plans, IDE structure comparison |
-| `grok-workbench/` | Architecture, audits, self-host notes |
-| `reports/` | Investigation / verification reports (was bao-cao) |
-| `ops/` | Build/dist ops, source copy status |
+| `grok-workbench/` | Architecture, feasibility and self-host notes |
+| `ops/` | Build and distribution guidance |
 
-Build policy: `H:\projects\.grok-build\policies\BUILD_POLICY.md`  
-Dist artifacts: `H:\projects\grok-build-ide\dist`  
+Generated artifacts belong in the ignored repository-root `dist/` directory. Local
+session state, investigation reports and machine-specific paths must not be committed.

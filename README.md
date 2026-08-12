@@ -198,7 +198,7 @@ grok-build-ide/
 │  ├─ grok-release/                  Release orchestrator/publisher
 │  ├─ build-grok-workbench-*.ps1     Tạo payload, launcher và installer
 │  └─ verify-*.ps1                   Cổng kiểm tra artifact/runtime
-├─ docs/                             Kiến trúc, báo cáo và vận hành
+├─ docs/                             Kiến trúc và hướng dẫn vận hành
 ├─ fix-bug/FIX_LOG.md                Lịch sử thay đổi Grok-specific
 ├─ product.json                      Product identity của IDE
 ├─ packaging.json                    Hợp đồng đóng gói
@@ -336,7 +336,7 @@ Một số workflow Code - OSS upstream giả định repository công khai ho�
 | [`docs/grok-workbench/ARCHITECTURE.md`](docs/grok-workbench/ARCHITECTURE.md) | Kiến trúc Code - OSS/Grok extension |
 | [`docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md`](docs/grok-workbench/SELF_HOST_EDIT_AND_FEATURES.md) | Luồng tự host và tính năng extension |
 | [`docs/ops/BUILD_AND_DIST.md`](docs/ops/BUILD_AND_DIST.md) | Ghi chú vận hành build/dist |
-| [`fix-bug/FIX_LOG.md`](fix-bug/FIX_LOG.md) | Lịch sử sửa lỗi và release |
+| [`fix-bug/FIX_LOG.md`](fix-bug/FIX_LOG.md) | Changelog kỹ thuật và release |
 | [`SECURITY.md`](SECURITY.md) | Chính sách báo cáo vấn đề bảo mật |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Hướng dẫn đóng góp Code - OSS |
 

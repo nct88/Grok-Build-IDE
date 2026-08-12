@@ -74,3 +74,14 @@ dist/
 /build/grok/**/bin/
 /build/grok/**/obj/
 
+# Grok Build Workbench generated visual verification outputs
+/extensions/grok-build-workbench/test/visual/evidence/
+
+# Local runtime state and generated investigation output
+/temp/
+/scratch/
+/memory/
+/.project-memory/
+/docs/reports/
+/extensions/grok-build-workbench/fix-bug/
+
