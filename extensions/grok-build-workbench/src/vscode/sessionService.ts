@@ -15,6 +15,11 @@ export interface GrokSessionSummary {
   reasoningEffort?: string;
 }
 
+export interface TranscriptMessage {
+  role: "user" | "assistant" | "system" | "other";
+  text: string;
+}
+
 interface SummaryJson {
   info?: { id?: string; cwd?: string };
   session_summary?: string;
@@ -141,22 +146,20 @@ export async function resolveSessionTitle(options: {
   sessionId: string;
   generatedTitle?: string;
   sessionSummary?: string;
-}): Promise<string> {
+}): Promise<{ title: string; hasUserContent: boolean }> {
   const generated = options.generatedTitle?.trim();
   if (generated) {
-    return truncateTitle(generated);
+    return { title: truncateTitle(generated), hasUserContent: true };
   }
   const summary = options.sessionSummary?.trim();
   if (summary) {
-    return truncateTitle(summary);
+    return { title: truncateTitle(summary), hasUserContent: true };
   }
   const fromHistory = await readFirstUserPromptTitle(options.sessionDir);
   if (fromHistory) {
-    return fromHistory;
+    return { title: fromHistory, hasUserContent: true };
   }
-  return options.sessionId.length > 12
-    ? `${options.sessionId.slice(0, 10)}…`
-    : options.sessionId;
+  return { title: "Untitled chat", hasUserContent: false };
 }
 
 export async function listLocalSessions(options: {
@@ -197,12 +200,13 @@ export async function listLocalSessions(options: {
           continue;
         }
         const id = summary.info?.id ?? sessionId;
-        const title = await resolveSessionTitle({
+        const { title, hasUserContent } = await resolveSessionTitle({
           sessionDir,
           sessionId: id,
           ...(summary.generated_title ? { generatedTitle: summary.generated_title } : {}),
           ...(summary.session_summary ? { sessionSummary: summary.session_summary } : {}),
         });
+        const rawCount = summary.num_chat_messages ?? summary.num_messages ?? 0;
         sessions.push({
           id,
           cwd,
@@ -213,7 +217,7 @@ export async function listLocalSessions(options: {
             summary.updated_at ??
             summary.created_at ??
             new Date(0).toISOString(),
-          messageCount: summary.num_chat_messages ?? summary.num_messages ?? 0,
+          messageCount: hasUserContent ? rawCount : 0,
           ...(summary.reasoning_effort ? { reasoningEffort: summary.reasoning_effort } : {}),
         });
       } catch {
@@ -223,7 +227,91 @@ export async function listLocalSessions(options: {
   }
 
   sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return sessions.slice(0, options.limit ?? 30);
+  return sessions.slice(0, options.limit ?? 40);
+}
+
+/**
+ * Load user/assistant turns from chat_history.jsonl for UI replay.
+ * Matches the Grok Build desktop transcript shown when a session is resumed.
+ */
+export async function readSessionTranscript(options: {
+  sessionId: string;
+  grokHome?: string;
+  limit?: number;
+}): Promise<TranscriptMessage[]> {
+  const sessionDir = await findSessionDirectory({
+    sessionId: options.sessionId,
+    ...(options.grokHome ? { grokHome: options.grokHome } : {}),
+  });
+  if (!sessionDir) {
+    return [];
+  }
+
+  const historyPath = join(sessionDir, "chat_history.jsonl");
+  const out: TranscriptMessage[] = [];
+  const limit = options.limit ?? 200;
+  try {
+    const stream = createReadStream(historyPath, { encoding: "utf8" });
+    const rl = createInterface({ input: stream, crlfDelay: Infinity });
+    try {
+      for await (const line of rl) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          continue;
+        }
+        let row: ChatHistoryLine;
+        try {
+          row = JSON.parse(trimmed) as ChatHistoryLine;
+        } catch {
+          continue;
+        }
+        const type = (row.type || row.role || "").toLowerCase();
+        if (type === "system" || type === "reasoning") {
+          continue;
+        }
+        if (row.synthetic_reason && row.synthetic_reason !== "user") {
+          const syntheticText = extractTextFromContent(row.content);
+          if (!syntheticText.includes("<user_query>")) {
+            continue;
+          }
+        }
+
+        let role: TranscriptMessage["role"];
+        if (type === "user") {
+          role = "user";
+        } else if (type === "assistant" || type === "agent") {
+          role = "assistant";
+        } else {
+          continue;
+        }
+
+        let text = extractTextFromContent(row.content).trim();
+        if (!text) {
+          continue;
+        }
+        const query = text.match(/<user_query>\s*([\s\S]*?)\s*<\/user_query>/i);
+        if (query?.[1]) {
+          text = query[1].trim();
+        }
+        if (text.includes("<system-reminder>") && text.length > 2_000) {
+          continue;
+        }
+        if (text.length > 50_000) {
+          text = `${text.slice(0, 50_000)}\n…`;
+        }
+        out.push({ role, text });
+        if (out.length >= limit) {
+          break;
+        }
+      }
+    } finally {
+      rl.close();
+      stream.destroy();
+    }
+  } catch {
+    return [];
+  }
+  return out;
 }
 
 /** Locate a session folder by id under ~/.grok/sessions/<cwd>/<id>. */

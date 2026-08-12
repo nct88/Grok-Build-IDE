@@ -91,6 +91,14 @@ export type GrokEvent =
       agentVersion: string;
     }
   | { type: "session"; sessionId: string; title?: string; resumed?: boolean }
+  | {
+      type: "session_transcript";
+      sessionId: string;
+      messages: Array<{
+        role: "user" | "assistant" | "system" | "other";
+        text: string;
+      }>;
+    }
   | { type: "clear_conversation"; reason: "new_session" | "manual" | "resume" }
   | {
       type: "model_catalog";

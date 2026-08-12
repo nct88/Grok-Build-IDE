@@ -114,4 +114,24 @@ describe("GrokController workspace preflight", () => {
       "[follow] Grok Build location is outside the open workspace",
     );
   });
+
+  it("does not replay a stale transcript after the conversation is cleared", () => {
+    const output = { appendLine: vi.fn() } as unknown as vscodeTypes.OutputChannel;
+    const controller = new GrokController(output);
+    const events: GrokEvent[] = [];
+    controller.onEvent((event) => events.push(event));
+    const internal = controller as unknown as {
+      sessionTranscriptEvent: Extract<GrokEvent, { type: "session_transcript" }> | undefined;
+    };
+    internal.sessionTranscriptEvent = {
+      type: "session_transcript",
+      sessionId: "old-session",
+      messages: [{ role: "user", text: "Old content" }],
+    };
+
+    controller.clearConversation();
+
+    expect(events).toEqual([{ type: "clear_conversation", reason: "manual" }]);
+    expect(controller.initialEvents.some((event) => event.type === "session_transcript")).toBe(false);
+  });
 });

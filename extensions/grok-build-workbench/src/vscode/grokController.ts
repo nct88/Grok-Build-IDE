@@ -21,6 +21,7 @@ import {
   deleteSessionViaCli,
   exportSessionMarkdown,
   listLocalSessions,
+  readSessionTranscript,
   type GrokSessionSummary,
 } from "./sessionService.js";
 import { TerminalHost } from "./terminalHost.js";
@@ -44,6 +45,9 @@ export class GrokController implements vscode.Disposable {
   private contextEvent: Extract<GrokEvent, { type: "context" }> | undefined;
   private runtimeEvent: Extract<GrokEvent, { type: "runtime" }> | undefined;
   private sessionEvent: Extract<GrokEvent, { type: "session" }> | undefined;
+  private sessionTranscriptEvent:
+    | Extract<GrokEvent, { type: "session_transcript" }>
+    | undefined;
   private modelCatalogEvent: Extract<GrokEvent, { type: "model_catalog" }> | undefined;
   private sessionConfigEvent: Extract<GrokEvent, { type: "session_config" }> | undefined;
   private sessionModesEvent: Extract<GrokEvent, { type: "session_modes" }> | undefined;
@@ -73,6 +77,7 @@ export class GrokController implements vscode.Disposable {
       ...(this.cliStatusEvent ? [this.cliStatusEvent] : []),
       ...(this.runtimeEvent ? [this.runtimeEvent] : []),
       ...(this.sessionEvent ? [this.sessionEvent] : []),
+      ...(this.sessionTranscriptEvent ? [this.sessionTranscriptEvent] : []),
       ...(this.modelCatalogEvent ? [this.modelCatalogEvent] : []),
       ...(this.sessionConfigEvent ? [this.sessionConfigEvent] : []),
       ...(this.sessionModesEvent ? [this.sessionModesEvent] : []),
@@ -217,6 +222,7 @@ export class GrokController implements vscode.Disposable {
     this.cancelPendingPermissions();
     this.seenDiffs.clear();
     this.resumeSessionId = undefined;
+    this.sessionTranscriptEvent = undefined;
     if (!this.client || this.client.connectionState === "error") {
       await this.connect();
       return;
@@ -226,10 +232,12 @@ export class GrokController implements vscode.Disposable {
 
   async resumeSession(sessionId: string): Promise<void> {
     this.resumeSessionId = sessionId;
+    this.sessionTranscriptEvent = undefined;
     if (this.client && this.client.connectionState !== "error") {
       try {
         await this.client.loadSession(sessionId);
         this.resumeSessionId = undefined;
+        await this.publishSessionTranscript(sessionId);
         return;
       } catch (error) {
         this.output.appendLine(
@@ -241,6 +249,21 @@ export class GrokController implements vscode.Disposable {
     }
     await this.disconnect();
     await this.connect(sessionId);
+    await this.publishSessionTranscript(sessionId);
+  }
+
+  private async publishSessionTranscript(sessionId: string): Promise<void> {
+    const messages = await readSessionTranscript({
+      sessionId,
+      grokHome: process.env.GROK_HOME || path.join(os.homedir(), ".grok"),
+    });
+    const event: Extract<GrokEvent, { type: "session_transcript" }> = {
+      type: "session_transcript",
+      sessionId,
+      messages,
+    };
+    this.sessionTranscriptEvent = event;
+    this.broadcast(event);
   }
 
   async loadSession(sessionId: string): Promise<void> {
@@ -293,6 +316,7 @@ export class GrokController implements vscode.Disposable {
   }
 
   clearConversation(): void {
+    this.sessionTranscriptEvent = undefined;
     this.broadcast({ type: "clear_conversation", reason: "manual" });
   }
 
@@ -595,6 +619,8 @@ export class GrokController implements vscode.Disposable {
     } else if (event.type === "session") {
       this.sessionEvent = event;
       this.usageEvent = undefined;
+    } else if (event.type === "clear_conversation" && event.reason !== "resume") {
+      this.sessionTranscriptEvent = undefined;
     } else if (event.type === "model_catalog") {
       this.modelCatalogEvent = event;
     } else if (event.type === "session_config") {

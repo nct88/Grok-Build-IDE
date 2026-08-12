@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   listLocalSessions,
+  readSessionTranscript,
   setSessionGeneratedTitle,
   titleFromUserMessageText,
 } from "./sessionService.js";
@@ -97,6 +98,77 @@ describe("listLocalSessions", () => {
     const sessions = await listLocalSessions({ grokHome: home, cwd: "H:\\proj" });
     expect(sessions).toHaveLength(1);
     expect(sessions[0]?.title).toBe("Đổi tiêu đề sessions thành câu hỏi đầu tiên");
+  });
+
+  it("marks an ACP shell without real user content as an untitled empty chat", async () => {
+    const home = await mkdtemp(join(tmpdir(), "grok-sessions-"));
+    const sessionDir = join(
+      home,
+      "sessions",
+      encodeURIComponent("H:\\proj"),
+      "empty-session-id",
+    );
+    await mkdir(sessionDir, { recursive: true });
+    await writeFile(
+      join(sessionDir, "summary.json"),
+      JSON.stringify({
+        info: { id: "empty-session-id", cwd: "H:\\proj" },
+        updated_at: "2026-08-04T00:00:00Z",
+        num_chat_messages: 3,
+      }),
+    );
+    await writeFile(
+      join(sessionDir, "chat_history.jsonl"),
+      JSON.stringify({ type: "system", content: "You are Grok." }),
+    );
+
+    const sessions = await listLocalSessions({ grokHome: home, cwd: "H:\\proj" });
+    expect(sessions[0]?.title).toBe("Untitled chat");
+    expect(sessions[0]?.messageCount).toBe(0);
+  });
+});
+
+describe("readSessionTranscript", () => {
+  it("replays the same user and assistant content as Grok Build desktop", async () => {
+    const home = await mkdtemp(join(tmpdir(), "grok-sessions-"));
+    const sessionDir = join(
+      home,
+      "sessions",
+      encodeURIComponent("H:\\proj"),
+      "transcript-session-id",
+    );
+    await mkdir(sessionDir, { recursive: true });
+    await writeFile(
+      join(sessionDir, "summary.json"),
+      JSON.stringify({ info: { id: "transcript-session-id", cwd: "H:\\proj" } }),
+    );
+    await writeFile(
+      join(sessionDir, "chat_history.jsonl"),
+      [
+        JSON.stringify({ type: "system", content: "You are Grok." }),
+        JSON.stringify({
+          type: "user",
+          synthetic_reason: "system_reminder",
+          content: "<system-reminder>hidden context</system-reminder>",
+        }),
+        JSON.stringify({
+          type: "user",
+          content: "<user_query>\nShow this previous request\n</user_query>",
+        }),
+        JSON.stringify({
+          type: "assistant",
+          content: [{ type: "text", text: "Previous **assistant** response" }],
+        }),
+        "not-json",
+      ].join("\n"),
+    );
+
+    await expect(
+      readSessionTranscript({ grokHome: home, sessionId: "transcript-session-id" }),
+    ).resolves.toEqual([
+      { role: "user", text: "Show this previous request" },
+      { role: "assistant", text: "Previous **assistant** response" },
+    ]);
   });
 });
 

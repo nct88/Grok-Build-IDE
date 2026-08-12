@@ -6,6 +6,14 @@
 - Added focused URL-policy and usage-service regression tests while preserving the existing rule that auth tokens stay inside the Extension Host and never appear in webview results or errors.
 - Sanitized local Windows usernames and temporary screenshot IDs from durable documentation; ignored local credentials, cookie stores, environment files, and machine-specific .NET packaging intermediates.
 
+## Unreleased — IDE resumed-session transcript parity
+
+- Symptom: resuming a session in Grok Build IDE cleared the chat and displayed “Previous transcript is not replayed”, while Grok Build desktop restored the prior user/assistant conversation.
+- Root cause: the IDE completed ACP `session/load` but had no local `chat_history.jsonl` replay event or webview renderer for persisted turns.
+- Resolution: reuse the Grok Build transcript rules, exclude system/synthetic scaffolding, unwrap `<user_query>`, broadcast and retain a `session_transcript` event after resume, and rebuild the webview timeline in original user/assistant order. Empty ACP shells now use the same `Untitled chat`/zero-message semantics as Grok Build.
+- Affected files: session service, controller, ACP event types, chat webview, and focused regression tests only; layout, controls, usage, tools, branding, and other IDE behavior are unchanged.
+- Verification: 13 focused session/controller tests, extension typecheck, complete 72-test/check/build/release-contract suite, and direct dark 240×720 plus light 390×720 transcript renders passed without horizontal overflow or composer movement.
+
 ## 1.0.6 — 2026-08-09 — Split white/black Fluffy brand system
 
 - Copied the complete processed Grok Build set plus the user-supplied Fluffy reference, removed all facial features, and created a faceless split white/black Fluffy with centered inverse “grok” lettering.
@@ -138,7 +146,7 @@
 - **Retention:** keep 2 newest dist versions (`Invoke-Retention.ps1`).
 - **Update channel:** VSIX + `apply-update.ps1` for extension-only fixes without full reinstall.
 - **Ops scripts:** `scripts/grok-release/*` (clean, publish, build-and-publish).
-- **Tree tidy:** `bao-cao` → `docs/reports`; product plans → `docs/product`; SOURCE_COPY_STATUS → `docs/ops`. No change to Code-OSS `src/` / `extensions/` architecture.
+- **Tree tidy:** investigation notes were separated from Code-OSS `src/` / `extensions/` architecture and later removed from the published source tree.
 
 ## 0.3.13b — 2026-08-04 — Dist path moved into project tree
 
@@ -246,7 +254,7 @@
 - Resolution: use a column flex layout so messages alone absorb free height and the composer remains intrinsic-sized; measure the visible `.composer-card`, shell height, and bottom gap in both the responsive harness and the packaged webview.
 - Invariants: only the conversation region grows/scrolls; plan visibility must not alter composer docking; the visible card bottom gap is at most 48 px and the empty composer shell is at most 180 px tall.
 - Regression gate: extension typecheck/tests/build and three responsive renders must pass; then the exact 0.3.7 EXE must expose packaged card geometry through CDP and produce a full-window screenshot with no contradictory blank region.
-- Historical correction: `CLAIM_EVIDENCE_0.3.6.md` and `FEATURE_AUDIT_0.3.6.md` now mark the earlier composer result invalid rather than preserving a false verified claim.
+- Historical correction: the earlier composer verification result was marked invalid and was not retained as a release claim.
 - Icon follow-up: replaced font-dependent Unicode controls with a centralized Lucide-style SVG registry after inspecting the locally installed Codex `app.asar`; responsive visual gates now reject unhydrated icons, non-24×24/currentColor SVG, and the former raw glyph set.
 
 ## 0.3.5 — 2026-08-03 — Release pipeline was pinned to 0.3.4 and could not rebuild safely
@@ -257,7 +265,6 @@
 - Invariants: released versions are never overwritten; source candidates remain under `.build`; extension tests precede packaging; runtime activation and one-window folder reuse must pass on the exact final EXE.
 - Affected artifact: `Grok-Workbench-IDE-0.3.5-win32-x64-portable.exe` with Grok Build Workbench 0.7.0.
 - Verification: build/src typechecks, 36/36 extension tests, production bundle, VSIX audit, registry/settings checks, extraction/cache repair, seven-process relocated runtime, extension activation, and one-window folder reuse passed.
-- Task/session: `grok-workbench-release-0.3.5` / `019fc39e-b7e3-7333-a548-2e3075b3ee6f`.
 
 ## 0.3.4 — 2026-08-02 — Open Folder created a redundant second window
 
@@ -266,7 +273,6 @@
 - Resolution: set the portable folder policy to `off`, make the profile a reproducible checked build input, add a runtime one-window regression gate, and embed Grok Build Workbench 0.6.0 with real ACP file attachments and an audited composer control path.
 - Invariants: launching Grok Workbench without arguments can still create/focus an empty application window; Workspace Trust remains disabled only in the portable profile; folder selection must replace the current empty window.
 - Affected artifact: `Grok-Workbench-IDE-0.3.4-win32-x64-portable.exe`.
-- Task/session: `grok-open-folder-current-window` / `open-folder-current-window`.
 
 ## 0.3.3 — 2026-08-02 — Completion summaries were separated from the latest task activity
 
@@ -275,7 +281,6 @@
 - Resolution: consolidate Grok Build Workbench source under `extensions/grok-build-workbench`, embed extension 0.5.1, and segment assistant output after intervening activity while preserving intentional reader scroll position.
 - Affected artifact: `Grok-Workbench-IDE-0.3.3-win32-x64-portable.exe`.
 - Regression gate: extension typecheck/tests/build, chronological browser harness inspection, responsive dark/light renders, portable extension registry validation, single-EXE extraction/cache repair, relocated runtime launch, and extension-host activation must pass.
-- Task/session: `grok-chat-context-order` / `chat-context-order`.
 
 ## 0.3.2 — 2026-08-02 — Portable release required manual ZIP extraction
 
@@ -342,7 +347,14 @@ Target: Grok Workbench IDE 0.1.0 / Grok Build Workbench 0.3.1
 - Symptom: the Grok composer was not reliably docked to the bottom, the permission popup was unreadable in dark mode, and assistant Markdown appeared as source notation instead of readable content.
 - Root cause: viewport layout and visual regression coverage were incomplete; native Windows select theming was outside CSS control; CLI management paths contained untested argument and confirmation edge cases.
 - Fix: ship Grok Build Workbench 0.8.0 with viewport docking, an accessible themed listbox, Codex-like safe Markdown, repaired visual gates, voice-error deduplication, and corrected worktree/sandbox/MCP/plugin/memory paths.
-- Audit: `docs/grok-workbench/FEATURE_AUDIT_0.3.6.md` records UI wiring and Grok CLI 0.2.118 parity/limitations.
+- Audit completed for UI wiring and Grok CLI 0.2.118 parity/limitations.
 - Verification: extension typecheck, 39/39 tests, production bundle, responsive UI checks, plus final portable extraction/runtime gates.
 - Affected artifact: `Grok-Workbench-IDE-0.3.6-win32-x64-portable.exe` with Grok Build Workbench 0.8.0.
-- Task/session: `grok-ui-markdown-audit-0.3.6` / `019fc39e-b7e3-7333-a548-2e3075b3ee6f`.
+
+## Unreleased — 2026-08-09 — Generated visual evidence was tracked in Git
+
+- Symptom: each Grok Build Workbench visual verification could rewrite versioned PNG output already committed under `test/visual/evidence`, creating repository churn.
+- Root cause: the generated verification destination was not declared in the repository `.gitignore`.
+- Resolution: ignore the visual evidence output directory and remove the 95 existing generated PNG files from Git tracking while preserving their local copies; extension-local `.vsix` packages were already covered by the extension's own ignore rule.
+- Preserved inputs: Code-OSS source/layout, report screenshots, visual test harness/scenarios, and Copilot simulation SQLite fixtures remain tracked because they are source, documented evidence, or deterministic test inputs.
+- Verification: `git check-ignore`, tracked-file audit, `git diff --check`, Grok Build Workbench `npm run check`, and dirty-session source hash comparison.

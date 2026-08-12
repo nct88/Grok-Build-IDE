@@ -578,7 +578,7 @@
     } else if (reason === "resume") {
       showSetupState(
         "Session resumed",
-        "Previous transcript is not replayed in the IDE. Continue with a new prompt.",
+        "Loading previous conversation…",
         "Continue",
         "connect",
       );
@@ -674,6 +674,34 @@
     const message = createMessage(role, text, contextNames);
     updateConversation(() => messages.appendChild(message.item), forceStickToBottom);
     return message.body;
+  }
+
+  function renderSessionTranscript(messagesToRender) {
+    tools.clear();
+    permissionCards.clear();
+    resetTurnPointers();
+    planDock.classList.add("hidden");
+    planDock.replaceChildren();
+    messages.replaceChildren();
+    const transcript = Array.isArray(messagesToRender) ? messagesToRender : [];
+    for (const message of transcript) {
+      if ((message.role !== "user" && message.role !== "assistant") || !message.text) {
+        continue;
+      }
+      addMessage(message.role, message.text);
+    }
+    if (!messages.children.length) {
+      messages.replaceChildren(emptyState);
+      showSetupState(
+        "Session resumed",
+        "No previous conversation content was found. Continue with a new prompt.",
+        "Continue",
+        "connect",
+      );
+      emptyConnect.classList.add("hidden");
+      return;
+    }
+    scrollToBottom();
   }
 
   let pendingRenderNodes = new Set();
@@ -1538,6 +1566,9 @@
         updateSession(event.sessionId, event.resumed);
         resetTurnPointers();
         tools.clear();
+        break;
+      case "session_transcript":
+        renderSessionTranscript(event.messages);
         break;
       case "clear_conversation":
         clearPromptQueue(false);
