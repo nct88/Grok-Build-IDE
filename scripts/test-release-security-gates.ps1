@@ -2,7 +2,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
-$buildRoot = (Resolve-Path -LiteralPath (Join-Path $projectRoot '.build')).Path
+$buildRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '.build'))
+New-Item -ItemType Directory -Force -Path $buildRoot | Out-Null
 $testRoot = Join-Path $buildRoot ("release-security-gates-{0}" -f [guid]::NewGuid().ToString('n'))
 if (-not ([IO.Path]::GetFullPath($testRoot)).StartsWith($buildRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe test root.' }
 
