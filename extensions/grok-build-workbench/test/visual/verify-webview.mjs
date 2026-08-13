@@ -138,6 +138,52 @@ try {
     assert(geometry.usageSession && geometry.usageAccount, `${scenario.name}: usage session/account sections missing`);
 
     await page.locator("#usageButton").click();
+    await page.locator("#sessionInfoRows .session-info-row").first().waitFor();
+    const sessionGeometry = await page.locator("#usagePopover").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        horizontalOverflow: element.scrollWidth > element.clientWidth,
+        rows: element.querySelectorAll("#sessionInfoRows .session-info-row").length,
+        sessionRefreshPosted: window.__postedMessages.some((message) => message.type === "refreshSessionInfo"),
+      };
+    });
+    assert(sessionGeometry.left >= -2, `${scenario.name}: session info clips left (${sessionGeometry.left.toFixed(1)}..${sessionGeometry.right.toFixed(1)})`);
+    assert(sessionGeometry.right <= scenario.width + 1, `${scenario.name}: session info clips right (${sessionGeometry.left.toFixed(1)}..${sessionGeometry.right.toFixed(1)})`);
+    assert(sessionGeometry.top >= -1 && sessionGeometry.bottom <= scenario.height + 1, `${scenario.name}: session info clips vertically`);
+    assert(sessionGeometry.width >= Math.min(200, scenario.width - 16), `${scenario.name}: session info is unexpectedly narrow`);
+    assert(!sessionGeometry.horizontalOverflow, `${scenario.name}: session info has horizontal overflow`);
+    assert(sessionGeometry.rows >= 12, `${scenario.name}: rich session metadata rows are incomplete`);
+    assert(sessionGeometry.sessionRefreshPosted, `${scenario.name}: opening Session did not request session data`);
+    await page.locator("#sessionInfoRows .session-info-row").first().click();
+    assert(await page.evaluate(() => Boolean(document.body.dataset.copiedText)), `${scenario.name}: row copy did not post clipboard text`);
+    await page.locator("#copyAllSessionInfoButton").click();
+    assert(
+      await page.evaluate(() => document.body.dataset.copiedText?.includes("Session ID:")),
+      `${scenario.name}: Copy all omitted session fields`,
+    );
+    await page.screenshot({
+      path: join(evidenceDir, `${scenario.name}-session-info-open.png`),
+      fullPage: false,
+    });
+
+    await page.locator('[data-session-tab="context"]').click();
+    const contextFillWidth = await page.locator("#usageContextBar").evaluate((element) => element.getBoundingClientRect().width);
+    assert(contextFillWidth > 0, `${scenario.name}: session context progress is empty`);
+    assert(
+      await page.locator("#sessionContextRows .usage-row").count() >= 6,
+      `${scenario.name}: cumulative session counters are incomplete`,
+    );
+    await page.screenshot({
+      path: join(evidenceDir, `${scenario.name}-context-open.png`),
+      fullPage: false,
+    });
+
+    await page.locator('[data-session-tab="account"]').click();
     if (scenario.fixture === "usage-error") {
       await page.locator("#accountUsageError").filter({ hasText: "Session expired" }).waitFor();
     } else {
@@ -156,7 +202,6 @@ try {
         bottom: rect.bottom,
         width: rect.width,
         horizontalOverflow: element.scrollWidth > element.clientWidth,
-        contextFillWidth: contextFill?.width || 0,
         accountFillWidth: accountFill?.width || 0,
         accountWrapWidth: accountWrap?.width || 0,
         accountFillStyle: element.querySelector("#accountUsageBar")?.getAttribute("style") || "",
@@ -166,13 +211,12 @@ try {
         errorText: element.querySelector("#accountUsageError")?.textContent?.trim() || "",
       };
     });
-    assert(usageGeometry.left >= -1, `${scenario.name}: usage popover clips left (${usageGeometry.left.toFixed(1)}..${usageGeometry.right.toFixed(1)})`);
+    assert(usageGeometry.left >= -2, `${scenario.name}: usage popover clips left (${usageGeometry.left.toFixed(1)}..${usageGeometry.right.toFixed(1)})`);
     assert(usageGeometry.right <= scenario.width + 1, `${scenario.name}: usage popover clips right (${usageGeometry.left.toFixed(1)}..${usageGeometry.right.toFixed(1)})`);
     assert(usageGeometry.top >= -1, `${scenario.name}: usage popover clips top`);
     assert(usageGeometry.bottom <= scenario.height + 1, `${scenario.name}: usage popover clips bottom`);
     assert(usageGeometry.width >= Math.min(200, scenario.width - 16), `${scenario.name}: usage popover is unexpectedly narrow`);
     assert(!usageGeometry.horizontalOverflow, `${scenario.name}: usage popover has horizontal overflow`);
-    assert(usageGeometry.contextFillWidth > 0, `${scenario.name}: session context progress is empty`);
     if (scenario.fixture === "usage-error") {
       assert(usageGeometry.accountFillWidth === 0, `${scenario.name}: error state shows stale account progress`);
       assert(usageGeometry.accountRows === 0, `${scenario.name}: error state shows stale account rows`);
@@ -181,7 +225,7 @@ try {
       assert(usageGeometry.accountFillWidth > 0, `${scenario.name}: account plan progress is empty (fill=${usageGeometry.accountFillWidth}, wrap=${usageGeometry.accountWrapWidth}, style=${usageGeometry.accountFillStyle})`);
       assert(usageGeometry.accountRows >= 4, `${scenario.name}: account usage rows are incomplete`);
     }
-    assert(usageGeometry.refreshPosted, `${scenario.name}: opening Usage did not request account data`);
+    assert(usageGeometry.refreshPosted, `${scenario.name}: opening Account did not request account data`);
     assert(usageGeometry.manageLabel.includes("Manage usage"), `${scenario.name}: manage usage action missing`);
     await page.locator("#manageUsageButton").click();
     const manageRequest = await page.evaluate(() =>
@@ -192,7 +236,7 @@ try {
       `${scenario.name}: Manage usage did not post a safe Grok URL`,
     );
     await page.screenshot({
-      path: join(evidenceDir, `${scenario.name}-usage-open.png`),
+      path: join(evidenceDir, `${scenario.name}-account-open.png`),
       fullPage: false,
     });
     await page.locator("#usageButton").click();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   listLocalSessions,
+  readSessionInfo,
   readSessionTranscript,
   setSessionGeneratedTitle,
   titleFromUserMessageText,
@@ -20,6 +21,85 @@ describe("titleFromUserMessageText", () => {
 
   it("skips synthetic scaffolding without user_query", () => {
     expect(titleFromUserMessageText("<system-reminder>\nskills...\n</system-reminder>")).toBeUndefined();
+  });
+});
+
+describe("readSessionInfo", () => {
+  it("derives the Grok CLI 1.0.3 session fields without exposing auth secrets", async () => {
+    const home = await mkdtemp(join(tmpdir(), "grok-session-info-"));
+    const sessionDir = join(home, "sessions", encodeURIComponent("H:\\proj"), "info-session-id");
+    await mkdir(sessionDir, { recursive: true });
+    await writeFile(
+      join(sessionDir, "summary.json"),
+      JSON.stringify({
+        info: { id: "info-session-id", cwd: "H:\\proj" },
+        generated_title: "Rich session details",
+        current_model_id: "grok-4.6",
+        sandbox_profile: "workspace",
+        reasoning_effort: "high",
+        agent_name: "Grok Build",
+        created_at: "2026-08-13T08:00:00Z",
+        updated_at: "2026-08-13T08:30:00Z",
+      }),
+    );
+    await writeFile(
+      join(sessionDir, "updates.jsonl"),
+      JSON.stringify({
+        params: {
+          update: {
+            usage: {
+              inputTokens: 30000,
+              outputTokens: 2000,
+              totalTokens: 32000,
+              cachedReadTokens: 12000,
+              cacheCreationTokens: 500,
+              reasoningTokens: 800,
+              modelCalls: 4,
+              apiDurationMs: 9123,
+              costUsdTicks: 2500000000,
+              numTurns: 3,
+            },
+          },
+        },
+      }),
+    );
+    await writeFile(
+      join(home, "models_cache.json"),
+      JSON.stringify({
+        models: {
+          "grok-4.6": { info: { api_backend: "responses", context_window: 128000 } },
+        },
+      }),
+    );
+    await writeFile(
+      join(home, "auth.json"),
+      JSON.stringify({ issuer: { auth_mode: "oauth", key: "must-not-leak", create_time: "2026-08-13" } }),
+    );
+
+    const info = await readSessionInfo({
+      sessionId: "info-session-id",
+      cwd: "H:\\proj",
+      grokHome: home,
+    });
+    expect(info).toMatchObject({
+      ok: true,
+      title: "Rich session details",
+      sessionId: "info-session-id",
+      workingDirectory: "H:\\proj",
+      model: "grok-4.6",
+      apiBackend: "responses",
+      sandbox: "workspace",
+      turns: 3,
+      reasoningEffort: "high",
+      context: {
+        used: 32000,
+        size: 128000,
+        percent: 25,
+        modelCalls: 4,
+        costUsd: 0.25,
+      },
+    });
+    expect(JSON.stringify(info)).not.toContain("must-not-leak");
   });
 });
 

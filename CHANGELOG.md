@@ -2,6 +2,14 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.7 — 2026-08-13
+
+- Added a Grok CLI 1.0.3-style Session info surface with separate Session, Context and Account tabs.
+- Derived safe local session metadata from Grok summaries, cumulative usage updates and the model cache, while keeping authentication secrets outside the webview.
+- Added title, CLI version, authentication method, Session ID, working directory, model/backend, sandbox, turns, reasoning effort, permission mode and ACP protocol details.
+- Added cumulative token/cache/reasoning/model-call/API-time/cost details plus click-to-copy rows and Copy all.
+- Added responsive visual regression coverage from 240px through 600px, at 150% scale, in dark/light themes and account-error state.
+
 ## 1.0.6 — 2026-08-12
 
 - Added restored user/assistant transcript replay when resuming Grok CLI sessions.

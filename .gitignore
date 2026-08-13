@@ -56,6 +56,7 @@ dist
 
 # Grok Build published artifacts (local dist channels)
 dist/
+/releases/
 
 
 # Secrets (xAI API keys — never commit)

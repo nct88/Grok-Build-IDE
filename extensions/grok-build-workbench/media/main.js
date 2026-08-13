@@ -116,7 +116,12 @@
   const usageContextPercent = byId("usageContextPercent");
   const usageContextBar = byId("usageContextBar");
   const usageContextBarWrap = byId("usageContextBarWrap");
+  const sessionContextRows = byId("sessionContextRows");
   const refreshUsageButton = byId("refreshUsageButton");
+  const sessionInfoTabs = byId("sessionInfoTabs");
+  const sessionInfoRows = byId("sessionInfoRows");
+  const sessionInfoEmpty = byId("sessionInfoEmpty");
+  const copyAllSessionInfoButton = byId("copyAllSessionInfoButton");
   const accountUsageTitle = byId("accountUsageTitle");
   const accountUsagePercent = byId("accountUsagePercent");
   const accountUsageBar = byId("accountUsageBar");
@@ -148,6 +153,7 @@
   let modelCatalog;
   let accountUsageLoaded = false;
   let accountUsageManageUrl = "https://grok.com?_s=usage";
+  let lastSessionInfoSnapshot = null;
   let recognition;
   let listening = false;
   let voiceBase = "";
@@ -466,7 +472,7 @@
     const shortId = sessionId.length > 12 ? `${sessionId.slice(0, 10)}…` : sessionId;
     sessionInfo.textContent = resumed ? `${shortId} (resumed)` : shortId;
     sessionInfo.title = `Session ${sessionId}`;
-    usageLabel.textContent = "Usage";
+    usageLabel.textContent = "Session";
     usageContextPercent.textContent = "—";
     setUsageProgress(usageContextBar, usageContextBarWrap, null);
     usageDetail.textContent = "Waiting for ACP session context data.";
@@ -1233,6 +1239,116 @@
     return row;
   }
 
+  function sessionInfoFields(data) {
+    if (!data) return [];
+    const dateLabel = (value) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+    };
+    return [
+      ["Title", data.title],
+      ["Shell version", data.shellVersion],
+      ["Auth method", data.authMethod],
+      ["Session ID", data.sessionId],
+      ["Working directory", data.workingDirectory],
+      ["Model", data.model],
+      ["Model Hash", data.modelHash],
+      ["API Backend", data.apiBackend],
+      ["Sandbox", data.sandbox],
+      ["Turns", data.turns],
+      ["Reasoning effort", data.reasoningEffort],
+      ["Permission mode", data.permissionMode],
+      ["ACP protocol", data.acpProtocol],
+      ["Created", dateLabel(data.createdAt)],
+      ["Updated", dateLabel(data.updatedAt)],
+    ].filter(([, value]) => value !== null && value !== undefined && value !== "");
+  }
+
+  function requestSessionInfoCopy(value) {
+    if (value === null || value === undefined || value === "") return;
+    vscode.postMessage({ type: "copyText", value: String(value) });
+  }
+
+  function renderSessionInfo(message) {
+    const loading = message.state === "loading";
+    refreshUsageButton.disabled = loading;
+    refreshUsageButton.classList.toggle("loading", loading);
+    if (loading) {
+      usageStatus.textContent = "Refreshing session information…";
+      return;
+    }
+    const data = message.data || null;
+    lastSessionInfoSnapshot = data;
+    const rows = sessionInfoFields(data);
+    sessionInfoRows.replaceChildren();
+    for (const [label, value] of rows) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "session-info-row";
+      row.title = "Click to copy value";
+      const key = document.createElement("span");
+      key.className = "session-info-row-key";
+      key.textContent = label;
+      const result = document.createElement("span");
+      result.className = "session-info-row-value";
+      result.textContent = String(value);
+      const copy = document.createElement("span");
+      copy.className = "session-info-row-copy";
+      copy.textContent = "Copy";
+      copy.setAttribute("aria-hidden", "true");
+      row.append(key, result, copy);
+      row.addEventListener("click", () => requestSessionInfoCopy(value));
+      sessionInfoRows.append(row);
+    }
+    sessionInfoEmpty.classList.toggle("hidden", rows.length > 0);
+    usageStatus.textContent = data?.ok
+      ? `${data.state || "connected"} · ${data.model || "Default model"}`
+      : "Connect to start a session.";
+    if (data?.context?.used != null && data?.context?.size) {
+      const percent = clampPercent(data.context.percent);
+      usageLabel.textContent = formatPercent(percent);
+      usageContextPercent.textContent = formatPercent(percent);
+      setUsageProgress(usageContextBar, usageContextBarWrap, percent);
+      usageDetail.textContent = `${formatTokens(data.context.used)} / ${formatTokens(data.context.size)} tokens (${formatPercent(percent)})`;
+    }
+    const context = data?.context || {};
+    const contextRows = [
+      ["Input tokens", context.inputTokens],
+      ["Output tokens", context.outputTokens],
+      ["Cached read", context.cachedReadTokens],
+      ["Cache creation", context.cacheCreationTokens],
+      ["Reasoning tokens", context.reasoningTokens],
+      ["Model calls", context.modelCalls],
+      ["API time", context.apiDurationMs == null ? null : `${(Number(context.apiDurationMs) / 1000).toFixed(1)}s`],
+      ["Cost", context.costUsd == null ? null : `$${Number(context.costUsd).toFixed(4)}`],
+    ].filter(([, value]) => value !== null && value !== undefined);
+    sessionContextRows.replaceChildren(...contextRows.map(([label, value]) =>
+      usageRow(label, typeof value === "number" && label !== "Cost" ? formatTokens(value) : String(value)),
+    ));
+  }
+
+  function activateSessionInfoTab(id) {
+    for (const tab of sessionInfoTabs.querySelectorAll("[data-session-tab]")) {
+      const active = tab.dataset.sessionTab === id;
+      tab.classList.toggle("active", active);
+      tab.setAttribute("aria-selected", String(active));
+    }
+    for (const panel of usagePopover.querySelectorAll("[data-session-panel]")) {
+      panel.classList.toggle("active", panel.dataset.sessionPanel === id);
+    }
+    if (id === "account" && !accountUsageLoaded) vscode.postMessage({ type: "refreshUsage" });
+  }
+
+  function copyAllSessionInfo() {
+    const rows = sessionInfoFields(lastSessionInfoSnapshot);
+    const context = lastSessionInfoSnapshot?.context || {};
+    if (context.used != null) rows.push(["Context used", formatTokens(context.used)]);
+    if (context.size != null) rows.push(["Context window", formatTokens(context.size)]);
+    if (context.percent != null) rows.push(["Context used %", formatPercent(context.percent)]);
+    requestSessionInfoCopy(rows.map(([label, value]) => `${label}: ${value}`).join("\n"));
+  }
+
   function formatCredits(value) {
     const number = Number(value);
     return Number.isFinite(number)
@@ -1308,7 +1424,7 @@
         empty.textContent = "No plan counters were returned by the account service.";
         accountUsageRows.append(empty);
       }
-      usageStatus.textContent = "Session context and account plan";
+      usageStatus.textContent = "Session info and account plan";
     }
 
     const fetched = data.fetchedAt ? new Date(data.fetchedAt) : null;
@@ -1325,7 +1441,7 @@
     setUsageProgress(usageContextBar, usageContextBarWrap, percent);
     const cost = event.cost ? ` · ${event.cost.amount} ${event.cost.currency}` : "";
     usageDetail.textContent = `${formatTokens(event.used)} / ${formatTokens(event.size)} tokens (${percent}%)${cost}`;
-    usageButton.title = `Session context ${usageDetail.textContent}. Open for account plan usage.`;
+    usageButton.title = `Session context ${usageDetail.textContent}. Open session information.`;
     const turn = usageButton.dataset.turnUsage;
     const sessionTurn = byId("sessionTurnUsage");
     if (sessionTurn) {
@@ -1555,6 +1671,14 @@
       renderAccountUsage(message.data);
       return;
     }
+    if (message.data?.type === "session_info") {
+      renderSessionInfo(message.data);
+      return;
+    }
+    if (message.data?.type === "copy_result") {
+      usageStatus.textContent = message.data.ok ? "Copied to clipboard" : "Could not copy";
+      return;
+    }
     if (message.data?.type !== "event") return;
     const event = message.data.event;
     switch (event.type) {
@@ -1685,13 +1809,28 @@
   // Seed effort menu immediately so it matches Permission chrome before ACP connects.
   ensureOfflineEffortOptions("");
   setFallbackMenu(modelState, "Default model");
-  usageButton.addEventListener("click", () => {
+  function toggleSessionInfo(open) {
     closeAllComposerMenus();
-    const hidden = usagePopover.classList.toggle("hidden");
+    const hidden = open === undefined
+      ? usagePopover.classList.toggle("hidden")
+      : !open;
+    usagePopover.classList.toggle("hidden", hidden);
     usageButton.setAttribute("aria-expanded", String(!hidden));
-    if (!hidden && !accountUsageLoaded) vscode.postMessage({ type: "refreshUsage" });
+    if (!hidden) vscode.postMessage({ type: "refreshSessionInfo" });
+  }
+  usageButton.addEventListener("click", () => toggleSessionInfo());
+  sessionInfo.addEventListener("click", () => toggleSessionInfo(true));
+  refreshUsageButton.addEventListener("click", () => {
+    vscode.postMessage({ type: "refreshSessionInfo" });
+    if (usagePopover.querySelector('[data-session-panel="account"]')?.classList.contains("active")) {
+      vscode.postMessage({ type: "refreshUsage" });
+    }
   });
-  refreshUsageButton.addEventListener("click", () => vscode.postMessage({ type: "refreshUsage" }));
+  sessionInfoTabs.addEventListener("click", (event) => {
+    const tab = event.target.closest?.("[data-session-tab]");
+    if (tab) activateSessionInfoTab(tab.dataset.sessionTab);
+  });
+  copyAllSessionInfoButton.addEventListener("click", copyAllSessionInfo);
   manageUsageButton.addEventListener("click", () =>
     vscode.postMessage({ type: "openExternal", value: accountUsageManageUrl }),
   );

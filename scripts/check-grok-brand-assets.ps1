@@ -21,8 +21,14 @@ Assert-True (Test-Path -LiteralPath $sourceMasterPath) "Missing approved Fluffy 
 Assert-True (Test-Path -LiteralPath $finalMasterPath) "Missing final brand master: $finalMasterPath"
 Assert-True (Test-Path -LiteralPath (Join-Path $ProjectRoot 'logo\source-fluffy-character.png')) 'Missing copied user-supplied Fluffy reference.'
 $expectedSourceNames = @('app-icon-master.png', 'icon-16.png', 'icon-20.png', 'icon-24.png', 'icon-32.png', 'icon-40.png', 'icon-48.png', 'icon-64.png', 'icon-128.png', 'icon-256.png', 'icon-512.png')
-$copiedSourceNames = @(Get-ChildItem (Join-Path $ProjectRoot 'logo\source-processed') -File | Select-Object -ExpandProperty Name | Sort-Object)
-Assert-True (($copiedSourceNames -join '|') -eq (($expectedSourceNames | Sort-Object) -join '|')) 'The copied Grok Build processed set is incomplete or contains unexpected files.'
+$copiedSourceRoot = Join-Path $ProjectRoot 'logo\source-processed'
+# The public-source cleanup intentionally removes this redundant internal copy.
+# Validate it when present, while keeping the canonical master and every shipped
+# platform/extension asset mandatory below.
+if (Test-Path -LiteralPath $copiedSourceRoot -PathType Container) {
+	$copiedSourceNames = @(Get-ChildItem -LiteralPath $copiedSourceRoot -File | Select-Object -ExpandProperty Name | Sort-Object)
+	Assert-True (($copiedSourceNames -join '|') -eq (($expectedSourceNames | Sort-Object) -join '|')) 'The copied Grok Build processed set is incomplete or contains unexpected files.'
+}
 Assert-True ((Get-Sha256 $sourceMasterPath) -eq (Get-Sha256 $finalMasterPath)) 'Processed master is not an exact copy of the approved split Fluffy master.'
 
 $final = [System.Drawing.Bitmap]::FromFile($finalMasterPath)

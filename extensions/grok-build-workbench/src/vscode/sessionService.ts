@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { open, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
@@ -20,6 +20,36 @@ export interface TranscriptMessage {
   text: string;
 }
 
+export interface GrokSessionInfoSnapshot {
+  ok: boolean;
+  title: string | null;
+  authMethod: string;
+  sessionId: string | null;
+  workingDirectory: string | null;
+  model: string | null;
+  modelHash: string | null;
+  apiBackend: string | null;
+  sandbox: string | null;
+  turns: number | null;
+  reasoningEffort: string | null;
+  agentName: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  context: {
+    used: number | null;
+    size: number | null;
+    percent: number | null;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cachedReadTokens: number | null;
+    cacheCreationTokens: number | null;
+    reasoningTokens: number | null;
+    modelCalls: number | null;
+    apiDurationMs: number | null;
+    costUsd: number | null;
+  };
+}
+
 interface SummaryJson {
   info?: { id?: string; cwd?: string };
   session_summary?: string;
@@ -31,6 +61,21 @@ interface SummaryJson {
   num_messages?: number;
   current_model_id?: string;
   reasoning_effort?: string;
+  sandbox_profile?: string;
+  agent_name?: string;
+}
+
+interface SessionUsageJson {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  cachedReadTokens?: number;
+  cacheCreationTokens?: number;
+  reasoningTokens?: number;
+  modelCalls?: number;
+  apiDurationMs?: number;
+  costUsdTicks?: number;
+  numTurns?: number;
 }
 
 interface ChatHistoryLine {
@@ -41,6 +86,22 @@ interface ChatHistoryLine {
 }
 
 const TITLE_MAX_LEN = 72;
+const USD_TICKS = 10_000_000_000;
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asNumber(value: unknown): number | null {
+  const number = Number(value);
+  return value !== null && value !== undefined && Number.isFinite(number) ? number : null;
+}
 
 function normalizePath(value: string): string {
   return value.replaceAll("/", "\\").toLowerCase();
@@ -314,6 +375,140 @@ export async function readSessionTranscript(options: {
   return out;
 }
 
+async function readLatestSessionUsage(sessionDir: string): Promise<SessionUsageJson | null> {
+  const updatesPath = join(sessionDir, "updates.jsonl");
+  let handle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    const fileStat = await stat(updatesPath);
+    const maxTail = 2 * 1024 * 1024;
+    const length = Math.min(fileStat.size, maxTail);
+    const start = Math.max(0, fileStat.size - length);
+    handle = await open(updatesPath, "r");
+    const buffer = Buffer.alloc(length);
+    await handle.read(buffer, 0, length, start);
+    let raw = buffer.toString("utf8");
+    if (start > 0) {
+      const newline = raw.indexOf("\n");
+      raw = newline >= 0 ? raw.slice(newline + 1) : "";
+    }
+    let latest: SessionUsageJson | null = null;
+    for (const line of raw.split("\n")) {
+      if (!line.includes("inputTokens") && !line.includes("totalTokens")) continue;
+      try {
+        const row = asRecord(JSON.parse(line));
+        const params = asRecord(row?.params);
+        const update = asRecord(params?.update);
+        const usage = asRecord(update?.usage);
+        if (usage && (usage.totalTokens !== undefined || usage.inputTokens !== undefined)) {
+          latest = usage as SessionUsageJson;
+        }
+      } catch {
+        // Ignore incomplete JSONL rows while the active session is writing.
+      }
+    }
+    return latest;
+  } catch {
+    return null;
+  } finally {
+    await handle?.close();
+  }
+}
+
+async function readAuthMethod(grokHome: string): Promise<string> {
+  if (process.env.XAI_API_KEY) return "API key (XAI_API_KEY)";
+  try {
+    const parsed = asRecord(JSON.parse(await readFile(join(grokHome, "auth.json"), "utf8")));
+    const entries = Object.values(parsed ?? {}).map(asRecord).filter(Boolean) as Array<Record<string, unknown>>;
+    entries.sort((left, right) => {
+      const a = Date.parse(asString(left.create_time) ?? "") || 0;
+      const b = Date.parse(asString(right.create_time) ?? "") || 0;
+      return b - a;
+    });
+    const entry = entries[0];
+    if (!entry) return "Not signed in";
+    const mode = asString(entry.auth_mode);
+    if (mode?.toLowerCase().includes("oauth")) return "OAuth";
+    return mode ?? (entry.key || entry.access_token ? "OAuth" : "Not signed in");
+  } catch {
+    return "Not signed in";
+  }
+}
+
+async function readModelInfo(grokHome: string, model: string | null): Promise<Record<string, unknown> | null> {
+  if (!model) return null;
+  try {
+    const cache = asRecord(JSON.parse(await readFile(join(grokHome, "models_cache.json"), "utf8")));
+    const models = asRecord(cache?.models);
+    const entry = asRecord(models?.[model]);
+    return asRecord(entry?.info);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safe local equivalent of Grok CLI 1.0.3 `/session-info` for ACP clients.
+ * The private x.ai/session/info extension is intentionally not required.
+ */
+export async function readSessionInfo(options: {
+  sessionId?: string;
+  cwd?: string;
+  grokHome?: string;
+}): Promise<GrokSessionInfoSnapshot> {
+  const grokHome = options.grokHome ?? join(homedir(), ".grok");
+  const sessionDir = options.sessionId
+    ? await findSessionDirectory({ sessionId: options.sessionId, grokHome })
+    : undefined;
+  let summary: SummaryJson = {};
+  if (sessionDir) {
+    try {
+      summary = JSON.parse(await readFile(join(sessionDir, "summary.json"), "utf8")) as SummaryJson;
+    } catch {
+      summary = {};
+    }
+  }
+  const usage = sessionDir ? await readLatestSessionUsage(sessionDir) : null;
+  const model = summary.current_model_id ?? null;
+  const modelInfo = await readModelInfo(grokHome, model);
+  const contextSize = asNumber(modelInfo?.context_window);
+  const contextUsed = asNumber(usage?.totalTokens);
+  const percent = contextSize && contextUsed !== null
+    ? Math.min(100, Math.max(0, Math.round((contextUsed / contextSize) * 1000) / 10))
+    : null;
+  const title = asString(summary.generated_title) ?? asString(summary.session_summary);
+  const costTicks = asNumber(usage?.costUsdTicks);
+
+  return {
+    ok: Boolean(options.sessionId),
+    title,
+    authMethod: await readAuthMethod(grokHome),
+    sessionId: options.sessionId ?? summary.info?.id ?? null,
+    workingDirectory: summary.info?.cwd ?? options.cwd ?? null,
+    model,
+    modelHash: null,
+    apiBackend: asString(modelInfo?.api_backend),
+    sandbox: asString(summary.sandbox_profile),
+    turns: asNumber(usage?.numTurns),
+    reasoningEffort: asString(summary.reasoning_effort),
+    agentName: asString(summary.agent_name) ?? "Grok Build",
+    createdAt: asString(summary.created_at),
+    updatedAt: asString(summary.updated_at),
+    context: {
+      used: contextUsed,
+      size: contextSize,
+      percent,
+      inputTokens: asNumber(usage?.inputTokens),
+      outputTokens: asNumber(usage?.outputTokens),
+      cachedReadTokens: asNumber(usage?.cachedReadTokens),
+      cacheCreationTokens: asNumber(usage?.cacheCreationTokens),
+      reasoningTokens: asNumber(usage?.reasoningTokens),
+      modelCalls: asNumber(usage?.modelCalls),
+      apiDurationMs: asNumber(usage?.apiDurationMs),
+      costUsd: costTicks === null ? null : costTicks / USD_TICKS,
+    },
+  };
+}
+
 /** Locate a session folder by id under ~/.grok/sessions/<cwd>/<id>. */
 export async function findSessionDirectory(options: {
   sessionId: string;
@@ -331,7 +526,7 @@ export async function findSessionDirectory(options: {
   for (const cwdRoot of cwdRoots) {
     const sessionDir = join(root, cwdRoot, options.sessionId);
     try {
-      await readFile(join(sessionDir, "summary.json"), "utf8");
+      await stat(sessionDir);
       return sessionDir;
     } catch {
       // try next cwd root

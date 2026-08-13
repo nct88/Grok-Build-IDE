@@ -611,6 +611,20 @@ h2 {
   min-width: 0;
 }
 
+.runtime-session-button {
+  max-width: 58%;
+  padding: 0;
+  border: 0;
+  color: var(--vscode-textLink-foreground);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.runtime-session-button:hover {
+  text-decoration: underline;
+}
+
 .metadata-link {
   max-width: 34%;
   padding: 0;
@@ -1432,7 +1446,7 @@ textarea:disabled {
   bottom: calc(100% + 8px);
   z-index: 3;
   box-sizing: border-box;
-  width: min(344px, calc(100vw - 16px));
+  width: min(420px, calc(100vw - 16px));
   max-height: min(560px, calc(100vh - 96px));
   overflow: auto;
   display: grid;
@@ -1462,6 +1476,125 @@ textarea:disabled {
   display: grid;
   gap: 2px;
   min-width: 0;
+}
+
+.usage-popover-head .session-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.session-copy-all {
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--vscode-textLink-foreground);
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.session-copy-all:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.session-info-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-widget-border, transparent);
+}
+
+.session-info-tab {
+  min-width: 0;
+  min-height: 29px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  color: var(--vscode-descriptionForeground);
+  background: transparent;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.session-info-tab:hover,
+.session-info-tab.active {
+  color: var(--vscode-foreground);
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.session-info-panel {
+  display: none;
+  min-width: 0;
+}
+
+.session-info-panel.active {
+  display: grid;
+}
+
+.session-info-panel[data-session-panel="session"] {
+  padding: 8px;
+}
+
+.session-info-rows {
+  display: grid;
+  gap: 2px;
+}
+
+.session-info-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: minmax(100px, .42fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-info-row:hover,
+.session-info-row:focus-visible {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.session-info-row-key {
+  min-width: 0;
+  color: var(--vscode-descriptionForeground);
+  overflow-wrap: anywhere;
+}
+
+.session-info-row-value {
+  min-width: 0;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 10.5px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.session-info-row-copy {
+  color: var(--vscode-textLink-foreground);
+  font-size: 9px;
+  opacity: 0;
+}
+
+.session-info-row:hover .session-info-row-copy,
+.session-info-row:focus-visible .session-info-row-copy {
+  opacity: 1;
+}
+
+#sessionInfoEmpty {
+  padding: 8px;
 }
 
 .usage-popover-head strong {
@@ -1623,6 +1756,15 @@ textarea:disabled {
 }
 
 @media (max-width: 480px) {
+  .session-info-row {
+    grid-template-columns: minmax(82px, .38fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .session-info-row-copy {
+    display: none;
+  }
+
   .composer-shell {
     padding-inline: 8px;
   }

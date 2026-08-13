@@ -100,7 +100,7 @@
         <button id="layoutButton" class="compact-icon-button" type="button" aria-label="Layout and move view" title="Layout and move view"><span data-icon="panels"></span></button>
       </div>
       <div class="runtime-row">
-        <span id="sessionInfo" class="truncate" title="No active session">No session</span>
+        <button id="sessionInfo" class="runtime-session-button truncate" type="button" title="Open session information">No session</button>
         <span aria-hidden="true">·</span><span id="runtimeInfo" class="truncate" title="ACP runtime">ACP</span>
       </div>
     </section>
@@ -160,33 +160,48 @@
             </div>
           </div>
           <div class="usage-anchor">
-            <button id="usageButton" class="composer-tool-button" type="button" title="Session context window (ACP)" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Usage</span></button>
-            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Usage">
-              <div class="usage-popover-head">
+            <button id="usageButton" class="composer-tool-button" type="button" title="Session information" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Session</span></button>
+            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Session information">
+              <div class="usage-popover-head session-info-head">
                 <div>
-                  <strong>Usage</strong>
-                  <span id="usageStatus">Session context and account plan</span>
+                  <strong>Session info</strong>
+                  <span id="usageStatus">Live details from Grok CLI and ACP</span>
                 </div>
-                <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh usage" title="Refresh usage"><span data-icon="refreshCw"></span></button>
-              </div>
-              <div class="usage-section">
-                <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
-                <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
-                <span id="usageDetail">Waiting for ACP session context data.</span>
-                <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
-              </div>
-              <div class="usage-section usage-account">
-                <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
-                <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
-                <div id="accountUsageRows" class="usage-rows">
-                  <span class="usage-empty">Open Usage to load your Grok account plan.</span>
+                <div class="session-head-actions">
+                  <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh session information" title="Refresh session information"><span data-icon="refreshCw"></span></button>
+                  <button id="copyAllSessionInfoButton" class="session-copy-all" type="button">Copy all</button>
                 </div>
-                <span id="accountUsageError" class="usage-error hidden"></span>
               </div>
-              <div class="usage-actions">
-                <span id="usageFetchedAt">Not refreshed yet</span>
-                <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
+              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Session information sections">
+                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="session">Session</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="context">Context</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="account">Account</button>
               </div>
+              <section class="session-info-panel active" data-session-panel="session">
+                <div id="sessionInfoRows" class="session-info-rows"></div>
+                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
+              </section>
+              <section class="session-info-panel" data-session-panel="context">
+                <div class="usage-section">
+                  <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
+                  <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
+                  <span id="usageDetail">Waiting for ACP session context data.</span>
+                  <div id="sessionContextRows" class="usage-rows session-context-rows"></div>
+                  <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
+                </div>
+              </section>
+              <section class="session-info-panel" data-session-panel="account">
+                <div class="usage-section usage-account">
+                  <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
+                  <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
+                  <div id="accountUsageRows" class="usage-rows"><span class="usage-empty">Open Account to load your Grok account plan.</span></div>
+                  <span id="accountUsageError" class="usage-error hidden"></span>
+                </div>
+                <div class="usage-actions">
+                  <span id="usageFetchedAt">Not refreshed yet</span>
+                  <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
+                </div>
+              </section>
             </div>
           </div>
           <button id="micButton" class="composer-tool-button mic-button" type="button" aria-label="Voice input" title="Voice input"><span data-icon="mic"></span></button>
@@ -244,13 +259,57 @@
       }));
     }
 
+    function emitSessionInfo() {
+      window.dispatchEvent(new MessageEvent("message", {
+        data: {
+          type: "session_info",
+          state: "ready",
+          data: {
+            ok: true,
+            state: "connected",
+            title: "Improve Grok Build session information",
+            shellVersion: "1.0.3",
+            authMethod: "OAuth",
+            sessionId: "81f5b741-e66d-4a7f-a10a-b2f3799e27db",
+            workingDirectory: "H:\\projects\\grok-code",
+            model: "grok-4.5",
+            modelHash: "1a29d5bc12",
+            apiBackend: "responses",
+            sandbox: "workspace",
+            turns: 4,
+            reasoningEffort: "high",
+            permissionMode: "ask",
+            acpProtocol: 1,
+            createdAt: "2026-08-13T08:00:00.000Z",
+            updatedAt: "2026-08-13T08:30:00.000Z",
+            context: {
+              used: 32000,
+              size: 128000,
+              percent: 25,
+              inputTokens: 30000,
+              outputTokens: 2000,
+              cachedReadTokens: 12000,
+              cacheCreationTokens: 500,
+              reasoningTokens: 800,
+              modelCalls: 4,
+              apiDurationMs: 9123,
+              costUsd: 0.25,
+            },
+          },
+        },
+      }));
+    }
+
     window.__postedMessages = [];
 
     window.acquireVsCodeApi = () => ({
       postMessage(message) {
         window.__postedMessages.push(message);
         if (message.type === "ready") {
-          setTimeout(() => runFixture(), 0);
+          setTimeout(() => {
+            runFixture();
+            emitSessionInfo();
+          }, 0);
         } else if (message.type === "send") {
           document.body.dataset.sendCount = String(Number(document.body.dataset.sendCount || "0") + 1);
           document.body.dataset.sendAttachments = JSON.stringify(message.attachments || []);
@@ -265,6 +324,13 @@
             data: { type: "account_usage", state: "loading" },
           }));
           setTimeout(() => emitAccountUsage(), 0);
+        } else if (message.type === "refreshSessionInfo") {
+          setTimeout(() => emitSessionInfo(), 0);
+        } else if (message.type === "copyText") {
+          document.body.dataset.copiedText = message.value || "";
+          window.dispatchEvent(new MessageEvent("message", {
+            data: { type: "copy_result", ok: true },
+          }));
         } else if (message.type === "openFolder") {
           document.body.dataset.openFolderRequested = "true";
         } else if (message.type === "openExplorer") {

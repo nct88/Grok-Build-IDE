@@ -10,6 +10,7 @@ import type { LayoutModeService, GrokProductId } from "./layoutModeService.js";
 import { PRODUCTS } from "./layoutModeService.js";
 import { fetchAccountUsage } from "./usageService.js";
 import { normalizeSafeExternalUrl } from "./externalUrlPolicy.js";
+import { readSessionInfo } from "./sessionService.js";
 import { listWorktrees, removeWorktree } from "./worktreeService.js";
 
 interface WebviewMessage {
@@ -50,6 +51,8 @@ interface WebviewMessage {
     | "logout"
     | "doctor"
     | "refreshUsage"
+    | "refreshSessionInfo"
+    | "copyText"
     | "memoryClear";
   text?: string;
   requestId?: string;
@@ -149,6 +152,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           for (const event of this.controller.initialEvents) {
             this.postEvent(event);
           }
+          await this.refreshSessionInfo();
           if (
             vscode.workspace.getConfiguration("grokBuild").get<boolean>("autoStart", true) &&
             this.controller.connectionState === "disconnected"
@@ -281,6 +285,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case "refreshUsage":
           await this.refreshUsage();
           break;
+        case "refreshSessionInfo":
+          await this.refreshSessionInfo();
+          break;
+        case "copyText":
+          if (typeof message.value === "string" && message.value) {
+            await vscode.env.clipboard.writeText(message.value);
+            await this.view?.webview.postMessage({ type: "copy_result", ok: true });
+          }
+          break;
         case "memoryClear":
           if (await this.confirmMemoryClear()) {
             await this.runAndNotify(() => clearMemory(this.cliContext()), "Memory");
@@ -338,6 +351,37 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     } finally {
       this.usageRefresh = undefined;
     }
+  }
+
+  private async refreshSessionInfo(): Promise<void> {
+    await this.view?.webview.postMessage({ type: "session_info", state: "loading" });
+    const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const sessionId = this.controller.activeSessionId;
+    const data = await readSessionInfo({
+      ...(sessionId ? { sessionId } : {}),
+      ...(cwd ? { cwd } : {}),
+    });
+    const events = this.controller.initialEvents;
+    const runtime = events.find(
+      (event): event is Extract<GrokEvent, { type: "runtime" }> => event.type === "runtime",
+    );
+    const context = events.find(
+      (event): event is Extract<GrokEvent, { type: "context" }> => event.type === "context",
+    );
+    await this.view?.webview.postMessage({
+      type: "session_info",
+      state: "ready",
+      data: {
+        ...data,
+        state: this.controller.connectionState,
+        shellVersion: runtime?.agentVersion || null,
+        acpProtocol: runtime?.protocolVersion ?? null,
+        model: data.model ?? context?.model ?? null,
+        sandbox: data.sandbox ?? context?.sandbox ?? null,
+        reasoningEffort: data.reasoningEffort ?? context?.reasoningEffort ?? null,
+        permissionMode: context?.permissionMode ?? null,
+      },
+    });
   }
 
   async showToolsHub(): Promise<void> {
@@ -764,6 +808,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private postEvent(event: GrokEvent): void {
     void this.view?.webview.postMessage({ type: "event", event });
+    if (event.type === "session" || event.type === "turn_complete") {
+      void this.refreshSessionInfo();
+    }
   }
 
   private getHtml(webview: vscode.Webview): string {
@@ -863,7 +910,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         <button id="layoutButton" class="compact-icon-button" type="button" aria-label="Switch product or layout" title="Switch product or layout"><span data-icon="panels"></span></button>
       </div>
       <div class="runtime-row">
-        <span id="sessionInfo" class="truncate" title="No active session">No session</span>
+        <button id="sessionInfo" class="runtime-session-button truncate" type="button" title="Open session information">No session</button>
         <span aria-hidden="true">·</span>
         <span id="runtimeInfo" class="truncate" title="ACP runtime">ACP</span>
       </div>
@@ -933,33 +980,50 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
             </div>
           </div>
           <div class="usage-anchor">
-            <button id="usageButton" class="composer-tool-button" type="button" title="Session context window (ACP)" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Usage</span></button>
-            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Usage">
-              <div class="usage-popover-head">
+            <button id="usageButton" class="composer-tool-button" type="button" title="Session information" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Session</span></button>
+            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Session information">
+              <div class="usage-popover-head session-info-head">
                 <div>
-                  <strong>Usage</strong>
-                  <span id="usageStatus">Session context and account plan</span>
+                  <strong>Session info</strong>
+                  <span id="usageStatus">Live details from Grok CLI and ACP</span>
                 </div>
-                <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh usage" title="Refresh usage"><span data-icon="refreshCw"></span></button>
-              </div>
-              <div class="usage-section">
-                <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
-                <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
-                <span id="usageDetail">Waiting for ACP session context data.</span>
-                <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
-              </div>
-              <div class="usage-section usage-account">
-                <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
-                <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
-                <div id="accountUsageRows" class="usage-rows">
-                  <span class="usage-empty">Open Usage to load your Grok account plan.</span>
+                <div class="session-head-actions">
+                  <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh session information" title="Refresh session information"><span data-icon="refreshCw"></span></button>
+                  <button id="copyAllSessionInfoButton" class="session-copy-all" type="button">Copy all</button>
                 </div>
-                <span id="accountUsageError" class="usage-error hidden"></span>
               </div>
-              <div class="usage-actions">
-                <span id="usageFetchedAt">Not refreshed yet</span>
-                <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
+              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Session information sections">
+                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="session">Session</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="context">Context</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="account">Account</button>
               </div>
+              <section class="session-info-panel active" data-session-panel="session">
+                <div id="sessionInfoRows" class="session-info-rows"></div>
+                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
+              </section>
+              <section class="session-info-panel" data-session-panel="context">
+                <div class="usage-section">
+                  <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
+                  <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
+                  <span id="usageDetail">Waiting for ACP session context data.</span>
+                  <div id="sessionContextRows" class="usage-rows session-context-rows"></div>
+                  <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
+                </div>
+              </section>
+              <section class="session-info-panel" data-session-panel="account">
+                <div class="usage-section usage-account">
+                  <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
+                  <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
+                  <div id="accountUsageRows" class="usage-rows">
+                    <span class="usage-empty">Open Account to load your Grok account plan.</span>
+                  </div>
+                  <span id="accountUsageError" class="usage-error hidden"></span>
+                </div>
+                <div class="usage-actions">
+                  <span id="usageFetchedAt">Not refreshed yet</span>
+                  <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
+                </div>
+              </section>
             </div>
           </div>
           <button id="micButton" class="composer-tool-button mic-button hidden" type="button" aria-label="Voice input" title="Voice input unavailable in this runtime"><span data-icon="mic"></span></button>

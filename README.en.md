@@ -8,7 +8,7 @@ Grok Build IDE is an optional source-code editor based on **Code - OSS**. It inc
 
 > Grok Build IDE is an independent repository. The primary agent desktop application is available at [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
 
-Current version: **1.0.6** — see [`build/grok/VERSION`](build/grok/VERSION).
+Current version: **1.0.7** — see [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Downloads
 
@@ -16,13 +16,13 @@ The current release is hosted in a private repository and requires a GitHub acco
 
 | Package | Purpose | Download |
 |---|---|---|
-| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.6.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-Setup-1.0.6.exe) |
-| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.6-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-1.0.6-win32-x64-portable.exe) |
-| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.6-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/Grok-Build-IDE-1.0.6-win32-x64-portable.zip) |
-| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.6.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/grok-build-workbench-1.0.6.vsix) |
-| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.6/MANIFEST.json) |
+| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.7.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.7/Grok-Build-IDE-Setup-1.0.7.exe) |
+| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.7-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.7/Grok-Build-IDE-1.0.7-win32-x64-portable.exe) |
+| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.7-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.7/Grok-Build-IDE-1.0.7-win32-x64-portable.zip) |
+| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.7.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.7/grok-build-workbench-1.0.7.vsix) |
+| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.7/MANIFEST.json) |
 
-Release page: [Grok Build IDE v1.0.6](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.6).
+Release page: [Grok Build IDE v1.0.7](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.7).
 
 The Windows executables are not currently Authenticode-signed. SmartScreen may display a warning on first launch; verify the SHA-256 value in `MANIFEST.json` before running an artifact.
 
@@ -103,7 +103,7 @@ The extension locates the CLI through `grokBuild.executablePath`, `PATH` and com
 
 ### Option 1: Inno Setup
 
-1. Download `Grok-Build-IDE-Setup-1.0.6.exe`.
+1. Download `Grok-Build-IDE-Setup-1.0.7.exe`.
 2. Compare its checksum with `MANIFEST.json`.
 3. Run the installer.
 4. Open **Grok Build IDE** from the Start Menu.
