@@ -33,7 +33,7 @@ $issScript = Join-Path $projectRoot 'build/grok/setup-installer/GrokBuildIDE.iss
 
 New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
 
-& $isccCompiler "/DMyAppVersion=$Version" "/DPayloadSourceDir=$payloadPath" "/O$outputPath" $issScript
+& $isccCompiler '/Qp' "/DMyAppVersion=$Version" "/DPayloadSourceDir=$payloadPath" "/O$outputPath" $issScript
 if ($LASTEXITCODE -ne 0) {
 	throw "Inno Setup compilation failed with exit code $LASTEXITCODE."
 }

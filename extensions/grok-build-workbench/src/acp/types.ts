@@ -82,6 +82,8 @@ export type GrokEvent =
       voiceInput: boolean;
       sandbox: string;
       experimentalMemory: boolean;
+      workspaceTrusted: boolean;
+      terminalRequested: boolean;
       enableTerminal: boolean;
     }
   | {
@@ -223,6 +225,8 @@ export interface GrokClientOptions {
   environment?: NodeJS.ProcessEnv;
   requestTimeoutMs?: number;
   enableTerminal?: boolean;
+  clientVersion?: string;
+  agentVersionHint?: string;
   resumeSessionId?: string;
   mcpServers?: acp.McpServer[];
 }

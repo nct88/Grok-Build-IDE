@@ -158,6 +158,9 @@
   let showToolDetails = true;
   let voiceInputEnabled = true;
   let allowOutsideWorkspace = false;
+  let workspaceTrusted = false;
+  let terminalRequested = false;
+  let terminalEnabled = false;
   let modelCatalog;
   let accountUsageLoaded = false;
   let accountUsageManageUrl = "https://grok.com?_s=usage";
@@ -332,6 +335,9 @@
     workspaceName.textContent = event.workspaceName;
     workspaceButton.title = `Open Explorer · ${event.workspaceName}`;
     allowOutsideWorkspace = event.allowOutsideWorkspace;
+    workspaceTrusted = Boolean(event.workspaceTrusted);
+    terminalRequested = Boolean(event.terminalRequested);
+    terminalEnabled = Boolean(event.enableTerminal);
     setPermissionMode(event.permissionMode || "ask", false);
     showReasoning = event.showReasoning;
     showToolDetails = event.showToolDetails;
@@ -410,14 +416,19 @@
   }
 
   function permissionTitle(mode, allowOutside) {
-    const scope = allowOutside ? "workspace and external paths" : "open workspace only";
+    const fileScope = allowOutside ? "workspace and external paths" : "open workspace only";
+    const shellScope = terminalEnabled
+      ? "host shell enabled (Grok sandbox + OS permissions)"
+      : terminalRequested && !workspaceTrusted
+        ? "host shell blocked until Workspace Trust"
+        : "host shell disabled";
     const labels = {
-      full: `Full access: approve ACP requests automatically; filesystem scope: ${scope}`,
-      auto: `Grok Auto mode; safe read/search/think/fetch auto-approved; filesystem: ${scope}`,
-      acceptEdits: `Accept edits: auto-approve reads and edits; execute still asks; filesystem: ${scope}`,
-      plan: `Plan mode: keep tool execution interactive; filesystem: ${scope}`,
-      dontAsk: `Don't ask: auto-approve ACP tool permissions; filesystem: ${scope}`,
-      ask: `Ask for every ACP permission request; filesystem scope: ${scope}`,
+      full: `Full access: auto-approve ACP permission prompts; ACP file host: ${fileScope}; ${shellScope}`,
+      auto: `Grok Auto mode; safe ACP requests may be auto-approved; ACP file host: ${fileScope}; ${shellScope}`,
+      acceptEdits: `Accept edits: auto-approve reads and edits; execute asks; ACP file host: ${fileScope}; ${shellScope}`,
+      plan: `Plan mode: keep ACP tool execution interactive; ACP file host: ${fileScope}; ${shellScope}`,
+      dontAsk: `Don't ask: auto-approve ACP permission prompts; ACP file host: ${fileScope}; ${shellScope}`,
+      ask: `Ask for each ACP permission request; ACP file host: ${fileScope}; ${shellScope}`,
     };
     return labels[mode] || labels.ask;
   }

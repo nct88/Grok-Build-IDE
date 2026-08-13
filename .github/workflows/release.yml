@@ -2,15 +2,18 @@ name: Release validation
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+    inputs:
+      version:
+        description: Version to validate before publication
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   validate:
+    name: Validate release candidate
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,9 +22,31 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Verify requested version
+        shell: pwsh
+        run: |
+          $version = (Get-Content build/grok/VERSION -Raw).Trim()
+          if ($version -ne '${{ inputs.version }}') { throw "Requested ${{ inputs.version }} but source is $version" }
       - run: npm run check:grok
+      - name: Verify release security gates
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-release-security-gates.ps1
+      - name: Block high or critical production dependency advisories
+        shell: pwsh
+        run: |
+          npm audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { throw 'Root production dependency audit failed.' }
+          npm --prefix extensions/grok-build-workbench audit --omit=dev --audit-level=high
+          if ($LASTEXITCODE -ne 0) { throw 'Workbench production dependency audit failed.' }
+      - name: Verify Grok CLI version used by release smoke
+        shell: pwsh
+        run: |
+          $expected = '1.0.3'
+          $documented = Select-String -Path extensions/grok-build-workbench/src/acp/grokClient.real.test.ts -Pattern 'GROK_EXPECTED_VERSION \|\| "1.0.3"'
+          if (-not $documented) { throw "Real Grok smoke contract is not pinned to $expected" }
       - run: npm --prefix extensions/grok-build-workbench run package:vsix
       - uses: actions/upload-artifact@v6
         with:
-          name: grok-build-workbench-vsix
+          name: grok-build-workbench-${{ inputs.version }}-${{ github.sha }}
+          if-no-files-found: error
           path: extensions/grok-build-workbench/*.vsix

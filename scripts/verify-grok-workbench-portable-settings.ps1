@@ -11,7 +11,7 @@ if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) {
 }
 $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
 $expected = [ordered]@{
-	'security.workspace.trust.enabled' = $false
+	'security.workspace.trust.enabled' = $true
 	'window.openFoldersInNewWindow' = 'off'
 	'window.openWithoutArgumentsInNewWindow' = 'off'
 	'window.restoreWindows' = 'preserve'
@@ -29,5 +29,6 @@ foreach ($property in $expected.GetEnumerator()) {
 	Settings = $settingsPath
 	OpenFoldersInNewWindow = $settings.'window.openFoldersInNewWindow'
 	OpenWithoutArgumentsInNewWindow = $settings.'window.openWithoutArgumentsInNewWindow'
-	Status = 'valid-current-window-folder-policy'
+	WorkspaceTrustEnabled = $settings.'security.workspace.trust.enabled'
+	Status = 'valid-secure-portable-settings'
 }

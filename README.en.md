@@ -8,7 +8,7 @@ Grok Build IDE is an optional source-code editor based on **Code - OSS**. It inc
 
 > Grok Build IDE is an independent repository. The primary agent desktop application is available at [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
 
-Current version: **1.0.8** — see [`build/grok/VERSION`](build/grok/VERSION).
+Current version: **1.0.9** — see [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Downloads
 
@@ -16,13 +16,13 @@ The current release is hosted in a private repository and requires a GitHub acco
 
 | Package | Purpose | Download |
 |---|---|---|
-| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.8.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-Setup-1.0.8.exe) |
-| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.8-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-1.0.8-win32-x64-portable.exe) |
-| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.8-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-1.0.8-win32-x64-portable.zip) |
-| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.8.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/grok-build-workbench-1.0.8.vsix) |
-| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/MANIFEST.json) |
+| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.9.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-Setup-1.0.9.exe) |
+| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.9-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.exe) |
+| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.9-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.zip) |
+| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.9.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/grok-build-workbench-1.0.9.vsix) |
+| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/MANIFEST.json) |
 
-Release page: [Grok Build IDE v1.0.8](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.8).
+Release page: [Grok Build IDE v1.0.9](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.9).
 
 The Windows executables are not currently Authenticode-signed. SmartScreen may display a warning on first launch; verify the SHA-256 value in `MANIFEST.json` before running an artifact.
 
@@ -103,7 +103,7 @@ The extension locates the CLI through `grokBuild.executablePath`, `PATH` and com
 
 ### Option 1: Inno Setup
 
-1. Download `Grok-Build-IDE-Setup-1.0.8.exe`.
+1. Download `Grok-Build-IDE-Setup-1.0.9.exe`.
 2. Compare its checksum with `MANIFEST.json`.
 3. Run the installer.
 4. Open **Grok Build IDE** from the Start Menu.
@@ -211,7 +211,7 @@ grok-build-ide/
 - Grok-specific runtime and UI live in `extensions/grok-build-workbench`.
 - Grok CLI runs as a child process and owns the agent loop and service connection.
 - The extension does not store a copy of the Grok token in the webview.
-- Filesystem access outside the workspace is denied by default unless a verified policy or override allows it.
+- The ACP file host denies paths outside the workspace by default. This is not a shell sandbox; reverse-terminal is off by default and requires Workspace Trust.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -223,7 +223,7 @@ The version must remain synchronized across:
 - `extensions/grok-build-workbench/package.json`.
 - The release command's `-Version` argument.
 
-Standard release command:
+Local candidate command (may auto-select the newest base):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
@@ -231,13 +231,16 @@ powershell -NoProfile -ExecutionPolicy Bypass `
   -Version <semver>
 ```
 
-If no suitable base candidate is available, provide its path explicitly:
+Every public release must provide a reviewed base, clean source and an HTTPS URL. Signing is the default; use the unsigned waiver only when the publisher deliberately accepts SmartScreen warnings:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
   -File scripts\grok-release\build-and-publish.ps1 `
   -Version <semver> `
-  -BaseCandidateRoot <path-to-valid-payload>
+  -BaseCandidateRoot <path-to-valid-payload> `
+  -ReleaseBaseUrl <https-download-root> `
+  -AllowUnsignedPublicRelease `
+  -PublicRelease
 ```
 
 Each version is immutable; the pipeline stops when `dist/<version>` already exists.
@@ -256,7 +259,7 @@ dist/<version>/
 └─ latest.json
 ```
 
-The release pipeline verifies the Portable EXE, Portable ZIP, installer and VSIX before publishing metadata. Public mode requires HTTPS and a valid Authenticode signature.
+The release pipeline verifies the Portable EXE, Portable ZIP, installer and VSIX before publishing metadata. Public mode requires a source/commit-matching base and HTTPS; the manifest truthfully records `public-signed` or `public-unsigned`. See [`docs/RELEASE.md`](docs/RELEASE.md) for the CI-before-tag publication flow.
 
 ## Updating only the extension
 

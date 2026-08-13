@@ -134,7 +134,7 @@ export class GrokClient {
           clientInfo: {
             name: "grok-build-ide",
             title: "Grok Build IDE",
-            version: "0.8.16",
+            version: this.options.clientVersion ?? "development",
           },
           _meta: {
             startupHints: {
@@ -156,7 +156,7 @@ export class GrokClient {
         type: "runtime",
         protocolVersion: initializeResponse.protocolVersion,
         agentName: initializeResponse.agentInfo?.name ?? "Grok Build",
-        agentVersion: initializeResponse.agentInfo?.version ?? "",
+        agentVersion: initializeResponse.agentInfo?.version || this.options.agentVersionHint || "",
       });
 
       await this.createSessionWithAuthRetry(initializeResponse.authMethods ?? []);

@@ -222,7 +222,7 @@
           <button id="send" class="send-button" type="button" aria-label="Send message" title="Send message"><span data-icon="arrowUp"></span></button>
         </div>
       </div>
-      <span class="hint">Enter send · Shift+Enter newline · @ or + add context · Paste image (Ctrl+V) · Drop images · Full access still respects filesystem scope</span>
+      <span class="hint">Enter send · Shift+Enter newline · While working: type &amp; send queues next turn · Stop cancels current · @ / paste / drop context</span>
     </footer>
   </main>
   <script>
@@ -467,7 +467,7 @@
         showToolDetails: true,
         voiceInput: true
       });
-      emit({ type: "runtime", protocolVersion: 1, agentName: "Grok Build", agentVersion: "0.2.118" });
+      emit({ type: "runtime", protocolVersion: 1, agentName: "Grok Build", agentVersion: "1.0.3" });
       emit({ type: "state", state: "connected", detail: "ACP session ready" });
       emit({ type: "session", sessionId: "81f5b741-e66d-4a7f-a10a-b2f3799e27db" });
       emit({ type: "model_catalog", currentModel: "grok-4.5", defaultModel: "grok-4.5", models: ["grok-4.5", "grok-code-fast"] });

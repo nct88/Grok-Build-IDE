@@ -1,5 +1,5 @@
 {
-  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.enabled": true,
   "window.openFoldersInNewWindow": "off",
   "window.openWithoutArgumentsInNewWindow": "off",
   "window.restoreWindows": "preserve",

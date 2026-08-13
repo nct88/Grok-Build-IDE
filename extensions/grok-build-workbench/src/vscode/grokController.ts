@@ -14,9 +14,14 @@ import { PERMISSION_MODES } from "../acp/types.js";
 import { cliOptions, runGrokCli } from "./cliRunner.js";
 import { EditReviewService } from "./editReviewService.js";
 import { resolveGrokExecutable } from "./executablePath.js";
+import { parseGrokVersion } from "./executableVersion.js";
 import { discoverGrokModels } from "./grokModels.js";
 import { buildGrokLaunchArguments } from "./launchConfiguration.js";
 import { selectAutomaticPermissionOption } from "./permissionPolicy.js";
+import {
+  assertTerminalEnabled,
+  resolveRuntimeSecurityPolicy,
+} from "./runtimeSecurityPolicy.js";
 import {
   deleteSessionViaCli,
   exportSessionMarkdown,
@@ -57,7 +62,10 @@ export class GrokController implements vscode.Disposable {
   private permissionSequence = 0;
   private resumeSessionId: string | undefined;
 
-  constructor(private readonly output: vscode.OutputChannel) {}
+  constructor(
+    private readonly output: vscode.OutputChannel,
+    private readonly clientVersion = "development",
+  ) {}
 
   get connectionState(): ConnectionState {
     return this.state;
@@ -105,6 +113,21 @@ export class GrokController implements vscode.Disposable {
       });
       return;
     }
+    if (!vscode.workspace.isTrusted) {
+      this.handleClientEvent({
+        type: "state",
+        state: "error",
+        detail: "Trust this workspace before starting Grok Build",
+      });
+      const action = await vscode.window.showWarningMessage(
+        "Grok Build can read, edit, and run tools in this project. Trust the workspace to connect.",
+        "Manage Workspace Trust",
+      );
+      if (action === "Manage Workspace Trust") {
+        await vscode.commands.executeCommand("workbench.trust.manage");
+      }
+      return;
+    }
 
     if (this.client) {
       await this.client.stop();
@@ -121,8 +144,8 @@ export class GrokController implements vscode.Disposable {
       GROK_HOME: process.env.GROK_HOME || path.join(os.homedir(), ".grok"),
     };
 
-    const cliOk = await this.probeExecutable(executable);
-    if (!cliOk) {
+    const cliProbe = await this.probeExecutable(executable);
+    if (!cliProbe) {
       this.handleClientEvent({
         type: "cli_status",
         available: false,
@@ -138,7 +161,7 @@ export class GrokController implements vscode.Disposable {
     this.handleClientEvent({
       type: "cli_status",
       available: true,
-      detail: executable,
+      detail: cliProbe.detail,
     });
 
     const extraArguments = config.get<string[]>("extraArguments", []);
@@ -154,7 +177,11 @@ export class GrokController implements vscode.Disposable {
     const disableWebSearch = config.get<boolean>("disableWebSearch", false);
     const rules = config.get<string>("rules", "").trim();
     const maxTurns = config.get<number>("maxTurns", 0);
-    const enableTerminal = config.get<boolean>("enableTerminal", true);
+    const terminalRequested = config.get<boolean>("enableTerminal", false);
+    const securityPolicy = resolveRuntimeSecurityPolicy({
+      workspaceTrusted: vscode.workspace.isTrusted,
+      terminalRequested,
+    });
 
     this.refreshContext(this.formatWorkspaceName(folders));
     const catalog = await discoverGrokModels({
@@ -191,7 +218,9 @@ export class GrokController implements vscode.Disposable {
         cwd: folder.uri.fsPath,
         additionalDirectories,
         environment: grokEnvironment,
-        enableTerminal,
+        enableTerminal: securityPolicy.terminalEnabled,
+        clientVersion: this.clientVersion,
+        ...(cliProbe.version ? { agentVersionHint: cliProbe.version } : {}),
         ...(this.resumeSessionId ? { resumeSessionId: this.resumeSessionId } : {}),
         mcpServers: [],
       },
@@ -505,26 +534,47 @@ export class GrokController implements vscode.Disposable {
       requestPermission: (request) => this.requestPermission(request),
       onFileWrite: (change) => this.handleFilesystemWrite(change),
     });
+    const assertTerminalAllowed = () => {
+      const config = vscode.workspace.getConfiguration("grokBuild");
+      assertTerminalEnabled(
+        resolveRuntimeSecurityPolicy({
+          workspaceTrusted: vscode.workspace.isTrusted,
+          terminalRequested: config.get<boolean>("enableTerminal", false),
+        }),
+      );
+    };
     return Object.assign(workspaceHost, {
-      createTerminal: (request: acp.CreateTerminalRequest) =>
-        this.terminalHost.createTerminal(request),
-      terminalOutput: (request: acp.TerminalOutputRequest) =>
-        this.terminalHost.terminalOutput(request),
+      createTerminal: (request: acp.CreateTerminalRequest) => {
+        assertTerminalAllowed();
+        return this.terminalHost.createTerminal(request);
+      },
+      terminalOutput: (request: acp.TerminalOutputRequest) => {
+        assertTerminalAllowed();
+        return this.terminalHost.terminalOutput(request);
+      },
+      // Cleanup remains available after trust or the setting is removed so a
+      // previously-started process cannot be stranded in the background.
       releaseTerminal: (request: acp.ReleaseTerminalRequest) =>
         this.terminalHost.releaseTerminal(request),
-      waitForTerminalExit: (request: acp.WaitForTerminalExitRequest) =>
-        this.terminalHost.waitForExit(request),
-      killTerminal: (request: acp.KillTerminalRequest) => this.terminalHost.killTerminal(request),
+      waitForTerminalExit: (request: acp.WaitForTerminalExitRequest) => {
+        assertTerminalAllowed();
+        return this.terminalHost.waitForExit(request);
+      },
+      killTerminal: (request: acp.KillTerminalRequest) =>
+        this.terminalHost.killTerminal(request),
     });
   }
 
-  private async probeExecutable(executable: string): Promise<boolean> {
+  private async probeExecutable(
+    executable: string,
+  ): Promise<{ detail: string; version?: string } | undefined> {
+    let accessibleFallback = false;
     if (path.isAbsolute(executable) || executable.includes(path.sep) || executable.includes("/")) {
       try {
         await access(executable);
-        return true;
+        accessibleFallback = true;
       } catch {
-        return false;
+        return undefined;
       }
     }
     const result = await runGrokCli({
@@ -532,7 +582,15 @@ export class GrokController implements vscode.Disposable {
       args: ["--version"],
       timeoutMs: 8_000,
     });
-    return (result.code ?? 1) === 0 || /grok/i.test(result.stdout + result.stderr);
+    const output = `${result.stdout}${result.stderr}`.trim();
+    if ((result.code ?? 1) !== 0 && !/grok/i.test(output)) {
+      return accessibleFallback ? { detail: executable } : undefined;
+    }
+    const version = parseGrokVersion(output);
+    return {
+      detail: version ? `Grok Build CLI ${version} · ${executable}` : executable,
+      ...(version ? { version } : {}),
+    };
   }
 
   private requestPermission(
@@ -691,6 +749,10 @@ export class GrokController implements vscode.Disposable {
   private refreshContext(workspaceName?: string): void {
     const folders = vscode.workspace.workspaceFolders;
     const config = vscode.workspace.getConfiguration("grokBuild");
+    const securityPolicy = resolveRuntimeSecurityPolicy({
+      workspaceTrusted: vscode.workspace.isTrusted,
+      terminalRequested: config.get<boolean>("enableTerminal", false),
+    });
     this.handleClientEvent({
       type: "context",
       workspaceName:
@@ -707,7 +769,9 @@ export class GrokController implements vscode.Disposable {
       voiceInput: config.get<boolean>("voiceInput", false),
       sandbox: config.get<string>("sandbox", "").trim() || "off",
       experimentalMemory: config.get<boolean>("experimentalMemory", false),
-      enableTerminal: config.get<boolean>("enableTerminal", true),
+      workspaceTrusted: securityPolicy.workspaceTrusted,
+      terminalRequested: securityPolicy.terminalRequested,
+      enableTerminal: securityPolicy.terminalEnabled,
     });
   }
 

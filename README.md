@@ -8,7 +8,7 @@ Grok Build IDE là trình soạn thảo mã nguồn tùy chọn dựa trên **Co
 
 > Grok Build IDE là repository độc lập. Ứng dụng agent desktop chính nằm tại [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
 
-Phiên bản hiện tại: **1.0.8** — xem [`build/grok/VERSION`](build/grok/VERSION).
+Phiên bản hiện tại: **1.0.9** — xem [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Tải xuống
 
@@ -16,13 +16,13 @@ Release hiện tại nằm trong repository private và yêu cầu tài khoản 
 
 | Gói | Mục đích | Tải xuống |
 |---|---|---|
-| Inno Setup | Cài đặt đầy đủ trên Windows | [Grok-Build-IDE-Setup-1.0.8.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-Setup-1.0.8.exe) |
-| Portable EXE | File chạy portable tự giải nén | [Grok-Build-IDE-1.0.8-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-1.0.8-win32-x64-portable.exe) |
-| Portable ZIP | Giải nén một lần để sử dụng lâu dài | [Grok-Build-IDE-1.0.8-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/Grok-Build-IDE-1.0.8-win32-x64-portable.zip) |
-| VSIX Update | Cập nhật riêng Grok Build Workbench | [grok-build-workbench-1.0.8.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/grok-build-workbench-1.0.8.vsix) |
-| Manifest | Kích thước và SHA-256 của artifact | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.8/MANIFEST.json) |
+| Inno Setup | Cài đặt đầy đủ trên Windows | [Grok-Build-IDE-Setup-1.0.9.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-Setup-1.0.9.exe) |
+| Portable EXE | File chạy portable tự giải nén | [Grok-Build-IDE-1.0.9-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.exe) |
+| Portable ZIP | Giải nén một lần để sử dụng lâu dài | [Grok-Build-IDE-1.0.9-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.zip) |
+| VSIX Update | Cập nhật riêng Grok Build Workbench | [grok-build-workbench-1.0.9.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/grok-build-workbench-1.0.9.vsix) |
+| Manifest | Kích thước và SHA-256 của artifact | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/MANIFEST.json) |
 
-Trang release: [Grok Build IDE v1.0.8](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.8).
+Trang release: [Grok Build IDE v1.0.9](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.9).
 
 Các executable Windows hiện chưa được ký Authenticode. SmartScreen có thể cảnh báo trong lần chạy đầu; hãy kiểm tra SHA-256 trong `MANIFEST.json` trước khi chạy.
 
@@ -103,7 +103,7 @@ Extension tìm CLI theo cấu hình `grokBuild.executablePath`, `PATH` và vị 
 
 ### Cách 1: Inno Setup
 
-1. Tải `Grok-Build-IDE-Setup-1.0.8.exe`.
+1. Tải `Grok-Build-IDE-Setup-1.0.9.exe`.
 2. Đối chiếu checksum với `MANIFEST.json`.
 3. Chạy installer.
 4. Mở **Grok Build IDE** từ Start Menu.
@@ -213,7 +213,7 @@ grok-build-ide/
 - Grok-specific runtime/UI nằm trong `extensions/grok-build-workbench`.
 - Grok CLI là child process sở hữu agent loop và kết nối dịch vụ.
 - Extension không lưu bản sao token Grok trong webview.
-- Truy cập filesystem ngoài workspace bị từ chối mặc định, trừ policy/override được kiểm chứng.
+- ACP file host từ chối đường dẫn ngoài workspace theo mặc định. Quy tắc này không sandbox shell; terminal ngược mặc định tắt và yêu cầu Workspace Trust.
 
 Xem [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -225,7 +225,7 @@ Version phải đồng bộ giữa:
 - `extensions/grok-build-workbench/package.json`.
 - Tham số `-Version` của release command.
 
-Lệnh phát hành chuẩn:
+Lệnh tạo local candidate (có thể tự chọn base gần nhất):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
@@ -233,13 +233,16 @@ powershell -NoProfile -ExecutionPolicy Bypass `
   -Version <semver>
 ```
 
-Nếu không có base candidate phù hợp, truyền rõ đường dẫn:
+Public release luôn phải truyền base đã kiểm chứng, source sạch và URL HTTPS. Chế độ ký là mặc định; chỉ dùng waiver unsigned khi người phát hành chủ động chấp nhận cảnh báo SmartScreen:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
   -File scripts\grok-release\build-and-publish.ps1 `
   -Version <semver> `
-  -BaseCandidateRoot <duong-dan-payload-hop-le>
+  -BaseCandidateRoot <duong-dan-payload-hop-le> `
+  -ReleaseBaseUrl <https-download-root> `
+  -AllowUnsignedPublicRelease `
+  -PublicRelease
 ```
 
 Mỗi version là bất biến; pipeline dừng nếu `dist/<version>` đã tồn tại.
@@ -258,7 +261,7 @@ dist/<version>/
 └─ latest.json
 ```
 
-Pipeline release kiểm tra đủ portable EXE, portable ZIP, installer và VSIX trước khi xuất bản metadata. Chế độ public yêu cầu HTTPS và chữ ký Authenticode hợp lệ.
+Pipeline release kiểm tra đủ portable EXE, portable ZIP, installer và VSIX trước khi xuất bản metadata. Chế độ public yêu cầu base khớp source/commit và HTTPS; manifest ghi rõ `public-signed` hoặc `public-unsigned`. Quy trình chờ CI trước khi tạo tag/Release nằm trong [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ## Cập nhật riêng extension
 

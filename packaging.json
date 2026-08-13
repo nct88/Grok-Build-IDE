@@ -2,7 +2,9 @@
   "product": "Grok Build IDE",
   "versionSource": "build/grok/VERSION",
   "tool": ".NET single-file launcher + Inno Setup + VSIX update pack",
-  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/grok-release/build-and-publish.ps1 -Version <version>",
+  "baseCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/grok-release/Build-CodeOssBase.ps1",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/grok-release/build-and-publish.ps1 -Version <version> -BaseCandidateRoot <verified-base> -CertificateThumbprint <thumbprint> -TimestampUrl <https-url> -PublicRelease",
+  "unsignedPublicCommand": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/grok-release/build-and-publish.ps1 -Version <version> -BaseCandidateRoot <verified-base> -ReleaseBaseUrl <https-url> -AllowUnsignedPublicRelease -PublicRelease",
   "channels": {
     "portable": "dist/<version>/portable/",
     "install": "dist/<version>/install/",
@@ -11,8 +13,17 @@
   "manifest": "dist/<version>/MANIFEST.json",
   "latest": "dist/latest.json",
   "immutableVersions": true,
+  "provenance": {
+    "sourceCommit": true,
+    "baseProductSha256": true,
+    "baseExecutableSha256": true,
+    "baseProvenanceFile": ".grok-base-provenance.json",
+    "explicitBaseRequiredForPublicRelease": true
+  },
   "signing": {
-    "requiredForPublicRelease": true,
-    "status": "external-gate"
+    "requiredByDefault": true,
+    "explicitUnsignedWaiver": "-AllowUnsignedPublicRelease",
+    "unsignedStatus": "public-unsigned",
+    "status": "external-gate-or-explicit-waiver"
   }
 }

@@ -14,7 +14,8 @@ import { setSessionGeneratedTitle } from "./vscode/sessionService.js";
 
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("Grok Build 1.0", { log: true });
-  const controller = new GrokController(output);
+  const extensionVersion = String(context.extension?.packageJSON?.version ?? "development");
+  const controller = new GrokController(output, extensionVersion);
   const layoutMode = new LayoutModeService(context);
   const provider = new ChatViewProvider(context.extensionUri, controller, layoutMode);
 

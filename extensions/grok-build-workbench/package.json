@@ -3,9 +3,17 @@
   "displayName": "Grok Build IDE",
   "icon": "logo/grok-fluffy.png",
   "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "publisher": "local-grok-workbench",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nct88/Grok-Build-IDE.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nct88/Grok-Build-IDE/issues"
+  },
+  "homepage": "https://github.com/nct88/Grok-Build-IDE#readme",
   "private": true,
   "type": "module",
   "engines": {
@@ -49,6 +57,12 @@
     "onCommand:grokBuild.doctor",
     "onStartupFinished"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Grok Build can read, edit, and run tools in the open project. Trust the workspace before enabling the agent."
+    }
+  },
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -538,16 +552,16 @@
         },
         "grokBuild.enableTerminal": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "scope": "resource",
           "order": 40,
-          "markdownDescription": "Advertise ACP terminal reverse-RPC and host shell tools via Node child processes."
+          "markdownDescription": "Allow Grok Build to run host shell commands through ACP reverse-terminal. Requires Workspace Trust and a reconnect. Shell commands are governed by the Grok sandbox and OS permissions; they are **not** confined by `grokBuild.allowOutsideWorkspace`. Keep disabled unless the project and agent actions are trusted."
         },
         "grokBuild.allowOutsideWorkspace": {
           "type": "boolean",
           "default": false,
           "order": 41,
-          "markdownDescription": "Allow ACP file access **outside** the open workspace. Only for trusted agents/projects."
+          "markdownDescription": "Allow ACP `readTextFile` / `writeTextFile` access **outside** the open workspace. This does not restrict terminal commands or other Grok CLI tools. Only enable for trusted agents/projects."
         },
         "grokBuild.followAgentFiles": {
           "type": "boolean",
@@ -601,10 +615,11 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
     "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:real-grok": "node test/run-real-grok-smoke.mjs",
     "test:visual": "node test/visual/verify-webview.mjs",
     "check": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production && node ../../scripts/check-grok-release-contract.mjs && node test/visual/verify-webview.mjs",
     "vscode:prepublish": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production",
-    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.8.vsix"
+    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.9.vsix"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.3.0",

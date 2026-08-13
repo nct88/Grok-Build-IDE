@@ -69,5 +69,5 @@ any → disconnect/exit → disconnected or error
 - The webview is viewport-locked; only the conversation region scrolls and the composer remains docked.
 - Permission mode uses an accessible custom listbox so Windows native popup colors cannot escape the VS Code theme.
 - Assistant content is rendered by a safe Markdown subset that escapes agent HTML and delegates HTTP(S) links to VS Code.
-- Worktree auto naming, explicit sandbox-off, MCP transports, and non-interactive plugin/memory confirmations match Grok CLI 0.2.118 behavior.
+- Worktree auto naming, sandbox controls, MCP transports, session metadata, and non-interactive plugin/memory confirmations are reviewed against Grok CLI 1.0.3; an authenticated ACP v1 smoke is required before publication.
 - `test/visual/verify-webview.mjs` is the responsive geometry, interaction, and contrast gate.

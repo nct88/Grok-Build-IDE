@@ -51,10 +51,18 @@ foreach ($target in @($candidateRoot, $archivePath, $extractRoot)) {
 	}
 }
 
+function Copy-TreeRobust([string]$Source, [string]$Destination, [string[]]$ExtraArguments = @()) {
+	New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+	& robocopy $Source $Destination '/E' '/COPY:DAT' '/DCOPY:DAT' '/R:2' '/W:1' '/NFL' '/NDL' '/NJH' '/NJS' '/NP' @ExtraArguments
+	$robocopyExitCode = $LASTEXITCODE
+	if ($robocopyExitCode -ge 8) {
+		throw "robocopy failed with exit code $robocopyExitCode while copying $Source to $Destination."
+	}
+}
+
 try {
 	New-Item -ItemType Directory -Path $candidateRoot | Out-Null
-	Get-ChildItem -LiteralPath $baseRoot | Where-Object Name -ne 'data' |
-		Copy-Item -Recurse -Destination $candidateRoot
+	Copy-TreeRobust $baseRoot $candidateRoot @('/XD', (Join-Path $baseRoot 'data'))
 	$legacyExecutable = Join-Path $candidateRoot 'Grok Workbench.exe'
 	$brandedExecutable = Join-Path $candidateRoot 'Grok Build IDE.exe'
 	if ((Test-Path -LiteralPath $legacyExecutable) -and -not (Test-Path -LiteralPath $brandedExecutable)) {
@@ -109,17 +117,18 @@ try {
 	Write-Host 'Stamped Electron executable and synchronized packaged platform branding.'
 	$dataSource = Join-Path $baseRoot 'data'
 	$dataTarget = Join-Path $candidateRoot 'data'
-	New-Item -ItemType Directory -Path $dataTarget | Out-Null
-	Get-ChildItem -LiteralPath $dataSource | Where-Object Name -ne 'extensions' |
-		Copy-Item -Recurse -Destination $dataTarget
+	Copy-TreeRobust $dataSource $dataTarget @('/XD', (Join-Path $dataSource 'extensions'))
+	New-Item -ItemType Directory -Force -Path (Join-Path $dataTarget 'user-data\User') | Out-Null
 	Copy-Item -Force -LiteralPath $settingsTemplate -Destination (Join-Path $dataTarget 'user-data\User\settings.json')
 
 	$extensionsSource = Join-Path $dataSource 'extensions'
 	$extensionsTarget = Join-Path $dataTarget 'extensions'
-	New-Item -ItemType Directory -Path $extensionsTarget | Out-Null
-	Get-ChildItem -LiteralPath $extensionsSource |
-		Where-Object { $_.Name -ne 'extensions.json' -and $_.Name -notlike 'local-grok-workbench.grok-build-workbench-*' } |
-		Copy-Item -Recurse -Destination $extensionsTarget
+	$oldGrokDirectories = @(Get-ChildItem -LiteralPath $extensionsSource -Directory -ErrorAction SilentlyContinue |
+		Where-Object Name -like 'local-grok-workbench.grok-build-workbench-*' |
+		Select-Object -ExpandProperty FullName)
+	$extensionCopyArguments = @('/XF', 'extensions.json')
+	if ($oldGrokDirectories.Count) { $extensionCopyArguments += @('/XD') + $oldGrokDirectories }
+	Copy-TreeRobust $extensionsSource $extensionsTarget $extensionCopyArguments
 
 	Add-Type -AssemblyName System.IO.Compression.FileSystem
 	[System.IO.Compression.ZipFile]::ExtractToDirectory($extensionPath, $extractRoot)

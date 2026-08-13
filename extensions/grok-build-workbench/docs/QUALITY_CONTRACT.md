@@ -46,7 +46,7 @@
 - `pnpm run typecheck`.
 - `pnpm run test`: 7 tests covering mock initialize/session/prompt/stream/permission/cancel plus repeated no-workspace connect deduplication.
 - `pnpm run build`: production CJS bundle.
-- Real Grok `0.2.118` authenticated ACP v1 smoke: session created and prompt returned `ACP_OK` with `end_turn`.
+- Real Grok `1.0.3` authenticated ACP v1 smoke: binary version verified, session created, prompt returned the expected marker with `end_turn`, terminal disabled, and file writes rejected by the smoke host.
 - Installed VSIX 0.1.0 runtime baseline: real VS Code dark screenshot at 1920×1032 exposed four duplicated no-workspace errors and an enabled composer.
 - Fixed 0.1.1 harness: one setup surface and zero error cards after four repeated workspace-required events; prompt/send disabled; Open Folder interaction posted once.
 - Visual harness: dark long-content at effective 240×640 and 260×720, light error/empty and keyboard interaction at 390×720, dark completed at 600×900.

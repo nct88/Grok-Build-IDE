@@ -3,17 +3,20 @@
 #ifndef MyAppVersion
 #define MyAppVersion "1.0.6"
 #endif
-#define MyAppPublisher "Local Grok"
+#define MyAppPublisher "Grok Build IDE"
 #define MyAppExeName "Grok Build IDE.exe"
+#ifndef MyAppId
+#define MyAppId "{{9F5B2F1C-4B7E-4E6E-9C21-8D9A3B5C7D1E}"
+#endif
 
 [Setup]
-AppId={{9F5B2F1C-4B7E-4E6E-9C21-8D9A3B5C7D1E}
+AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-AppPublisherURL=https://github.com/microsoft/vscode
-AppSupportURL=https://github.com/microsoft/vscode
-AppUpdatesURL=https://github.com/microsoft/vscode
+AppPublisherURL=https://github.com/nct88/Grok-Build-IDE
+AppSupportURL=https://github.com/nct88/Grok-Build-IDE/issues
+AppUpdatesURL=https://github.com/nct88/Grok-Build-IDE/releases
 DefaultDirName={localappdata}\Programs\Grok Build IDE
 DisableDirPage=no
 DefaultGroupName={#MyAppName}

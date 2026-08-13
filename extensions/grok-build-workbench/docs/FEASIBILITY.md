@@ -36,7 +36,7 @@ MVP này không copy, sửa hay phân phối Grok Build source/binary; nó gọi
 
 1. **ACP thay đổi nhanh.** Grok Build và TypeScript SDK có version độc lập. Cần pin dependency, giữ mock contract tests và chạy smoke test với binary Grok thật ở mỗi release.
 2. **Windows source build không phải đường chính.** README upstream nói macOS/Linux được hỗ trợ làm build host; Windows source build là best-effort. MVP nên dùng Windows binary phát hành hoặc binary build trong CI Linux/macOS phù hợp.
-3. **Authentication cần runtime thật.** ACP đã được smoke-test với Grok CLI 0.2.118 đăng nhập qua grok.com, nhưng OAuth/API-key edge cases và re-authentication vẫn cần test riêng.
+3. **Authentication cần runtime thật.** ACP đã được smoke-test với Grok CLI 1.0.3 đăng nhập qua grok.com, nhưng OAuth/API-key edge cases và re-authentication vẫn cần test riêng.
 4. **Permission không đồng nghĩa sandbox.** Grok process có thể có filesystem/shell tools của chính nó; giới hạn reverse RPC của extension không thu hồi quyền OS của child process.
 5. **Feature parity.** TUI upstream có sessions, modes, models, MCP, hooks/plugins, dashboard, worktrees và nhiều xAI ACP extensions. MVP chỉ render tập ACP lõi.
 
@@ -53,5 +53,5 @@ Chỉ bắt đầu distribution riêng khi:
 
 ## Phạm vi đã kiểm chứng
 
-- **Verified:** TypeScript source contract; mock ACP initialize/session/prompt/stream/permission/cancel; production bundle; Grok CLI 0.2.118 đăng nhập grok.com; real ACP v1 initialize/session/prompt network round trip trả `ACP_OK`; VSIX 0.1.0 cài được trong user VS Code và môi trường cô lập.
+- **Verified:** TypeScript source contract; mock ACP initialize/session/prompt/stream/permission/cancel; production bundle; Grok CLI 1.0.3 đăng nhập grok.com; real ACP v1 initialize/session/prompt network round trip trả marker xác định; VSIX đã được kiểm tra bằng release/package gates.
 - **Chưa kiểm chứng:** OAuth/API-key edge cases, source build Rust trên Windows, pixel của bản vá 0.1.1 trong Extension Host thật và VSIX trên máy sạch khác.

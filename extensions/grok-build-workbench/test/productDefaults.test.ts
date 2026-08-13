@@ -20,6 +20,21 @@ describe("Grok Build IDE fresh-install defaults", () => {
 
     expect(manifest.contributes.configurationDefaults["files.hotExit"]).toBeUndefined();
     expect(profile["files.hotExit"]).toBe("onExitAndWindowClose");
+    expect(profile["security.workspace.trust.enabled"]).toBe(true);
+  });
+
+  it("keeps reverse-terminal fail-closed on a fresh install", () => {
+    const manifest = readJson("../package.json");
+    const properties = manifest.contributes.configuration.properties;
+
+    expect(properties["grokBuild.enableTerminal"].default).toBe(false);
+    expect(properties["grokBuild.enableTerminal"].markdownDescription).toContain(
+      "Requires Workspace Trust",
+    );
+    expect(properties["grokBuild.allowOutsideWorkspace"].markdownDescription).toContain(
+      "does not restrict terminal commands",
+    );
+    expect(manifest.capabilities.untrustedWorkspaces.supported).toBe(false);
   });
 
   it("uses IDE defaults before persisted product state is available", () => {

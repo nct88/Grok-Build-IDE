@@ -2,6 +2,15 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.9 — 2026-08-13
+
+- Enforced Workspace Trust and made reverse-terminal ACP opt-in with explicit security boundaries.
+- Added Grok CLI 1.0.3 version detection and an authenticated real-ACP smoke test.
+- Replaced the destructive VSIX updater with SHA-256 verification, atomic promotion, transaction backups, automatic recovery and explicit rollback.
+- Added isolated Windows install/uninstall lifecycle coverage that cannot modify the production AppId.
+- Added source-matching Code OSS base provenance, executable/product hashes, Authenticode signing/timestamp hooks and CI-before-publication gates.
+- Added project-owned security, privacy, support and dependency-security documentation.
+
 ## 1.0.8 — 2026-08-13
 
 - Rebuilt History as a searchable in-Agent drawer with date groups, active-session state and direct resume, rename, export, delete, refresh and new-conversation actions.

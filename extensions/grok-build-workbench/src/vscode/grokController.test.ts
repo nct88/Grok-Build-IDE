@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   configurationUpdate: vi.fn(),
   workspace: {
     workspaceFolders: undefined as vscodeTypes.WorkspaceFolder[] | undefined,
+    isTrusted: true,
     registerTextDocumentContentProvider: vi.fn(() => ({ dispose: vi.fn() })),
   },
 }));
@@ -16,6 +17,9 @@ vi.mock("vscode", () => ({
   workspace: {
     get workspaceFolders() {
       return mocks.workspace.workspaceFolders;
+    },
+    get isTrusted() {
+      return mocks.workspace.isTrusted;
     },
     getConfiguration: vi.fn(() => ({
       get: vi.fn((_key: string, fallback: unknown) => fallback),
@@ -40,6 +44,7 @@ import { GrokController } from "./grokController.js";
 describe("GrokController workspace preflight", () => {
   beforeEach(() => {
     mocks.workspace.workspaceFolders = undefined;
+    mocks.workspace.isTrusted = true;
     mocks.executeCommand.mockReset();
     mocks.showWarningMessage.mockReset();
     mocks.configurationUpdate.mockReset();
@@ -84,6 +89,28 @@ describe("GrokController workspace preflight", () => {
       "full",
       3,
     );
+  });
+
+  it("blocks Grok before probing or spawning in an untrusted workspace", async () => {
+    mocks.workspace.workspaceFolders = [{ name: "sample" }] as vscodeTypes.WorkspaceFolder[];
+    mocks.workspace.isTrusted = false;
+    mocks.showWarningMessage.mockResolvedValue("Manage Workspace Trust");
+    const output = { appendLine: vi.fn() } as unknown as vscodeTypes.OutputChannel;
+    const controller = new GrokController(output);
+    const events: GrokEvent[] = [];
+    controller.onEvent((event) => events.push(event));
+
+    await controller.connect();
+
+    expect(events).toEqual([
+      {
+        type: "state",
+        state: "error",
+        detail: "Trust this workspace before starting Grok Build",
+      },
+    ]);
+    expect(mocks.showWarningMessage).toHaveBeenCalledTimes(1);
+    expect(mocks.executeCommand).toHaveBeenLastCalledWith("workbench.trust.manage");
   });
 
   it("keeps an optional editor-follow failure from failing the agent event", async () => {
