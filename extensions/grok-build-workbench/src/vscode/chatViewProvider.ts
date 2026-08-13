@@ -10,7 +10,7 @@ import type { LayoutModeService, GrokProductId } from "./layoutModeService.js";
 import { PRODUCTS } from "./layoutModeService.js";
 import { fetchAccountUsage } from "./usageService.js";
 import { normalizeSafeExternalUrl } from "./externalUrlPolicy.js";
-import { readSessionInfo } from "./sessionService.js";
+import { readSessionInfo, setSessionGeneratedTitle } from "./sessionService.js";
 import { listWorktrees, removeWorktree } from "./worktreeService.js";
 
 interface WebviewMessage {
@@ -43,6 +43,10 @@ interface WebviewMessage {
     | "clearConversation"
     | "toolsHub"
     | "sessions"
+    | "resumeSession"
+    | "renameSession"
+    | "exportHistorySession"
+    | "deleteSession"
     | "mcp"
     | "worktree"
     | "plugins"
@@ -64,6 +68,8 @@ interface WebviewMessage {
   path?: string;
   line?: number;
   changeId?: string;
+  sessionId?: string;
+  title?: string;
   attachments?: PromptAttachment[];
 }
 
@@ -259,7 +265,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await this.showToolsHub();
           break;
         case "sessions":
-          await this.showSessionBrowser();
+          await this.refreshSessionsForWebview();
+          break;
+        case "resumeSession":
+          if (message.sessionId) {
+            await this.controller.resumeSession(message.sessionId);
+            await vscode.commands.executeCommand("grokBuild.refreshSessionsTree");
+            await this.refreshSessionsForWebview();
+          }
+          break;
+        case "renameSession":
+          if (message.sessionId) {
+            await this.renameHistorySession(message.sessionId, message.title);
+          }
+          break;
+        case "exportHistorySession":
+          if (message.sessionId) await this.controller.exportSession(message.sessionId);
+          break;
+        case "deleteSession":
+          if (message.sessionId) {
+            await this.deleteHistorySession(message.sessionId, message.title);
+          }
           break;
         case "mcp":
           await this.showMcpManager();
@@ -404,63 +430,72 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     if (!picked) {
       return;
     }
+    if (picked.action === "sessions") {
+      await this.showHistoryPanel();
+      return;
+    }
     await this.handleMessage({ type: picked.action });
   }
 
-  async showSessionBrowser(): Promise<void> {
-    const sessions = await this.controller.listSessions(40);
-    if (sessions.length === 0) {
-      await vscode.window.showInformationMessage("No Grok sessions found for this workspace.");
-      return;
+  async showHistoryPanel(): Promise<void> {
+    await vscode.commands.executeCommand(`${ChatViewProvider.viewType}.focus`);
+    this.view?.show(true);
+    await this.view?.webview.postMessage({ type: "open_history" });
+  }
+
+  private async refreshSessionsForWebview(): Promise<void> {
+    await this.view?.webview.postMessage({ type: "session_list", state: "loading" });
+    try {
+      const sessions = await this.controller.listSessions(80);
+      await this.view?.webview.postMessage({
+        type: "session_list",
+        state: "ready",
+        sessions,
+        activeSessionId: this.controller.activeSessionId ?? null,
+      });
+    } catch (error) {
+      await this.view?.webview.postMessage({
+        type: "session_list",
+        state: "error",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    const picked = await vscode.window.showQuickPick(
-      sessions.map((session) => ({
-        label: session.title,
-        description: session.id.slice(0, 8),
-        detail: `${session.model ?? "model?"} · ${session.messageCount} msgs · ${session.updatedAt}`,
-        session,
-      })),
-      { placeHolder: "Resume, export, or delete a Grok session", matchOnDetail: true },
-    );
-    if (!picked) {
-      return;
-    }
-    const action = await vscode.window.showQuickPick(
-      [
-        { label: "$(history) Resume session", action: "resume" as const },
-        { label: "$(export) Export as Markdown", action: "export" as const },
-        { label: "$(trash) Delete session", action: "delete" as const },
-      ],
-      { placeHolder: `Session ${picked.session.title}` },
-    );
-    if (!action) {
-      return;
-    }
-    if (action.action === "resume") {
-      await this.controller.resumeSession(picked.session.id);
-      return;
-    }
-    if (action.action === "export") {
-      // Temporarily set active by resume export path using session id via controller helper
-      const markdown = await import("./sessionService.js").then((mod) =>
-        mod.exportSessionMarkdown({
-          ...this.cliContext(),
-          sessionId: picked.session.id,
-        }),
-      );
-      const doc = await vscode.workspace.openTextDocument({ content: markdown, language: "markdown" });
-      await vscode.window.showTextDocument(doc, { preview: false });
+  }
+
+  private async renameHistorySession(sessionId: string, currentTitle?: string): Promise<void> {
+    const next = await vscode.window.showInputBox({
+      title: "Rename Conversation",
+      prompt: "Display title saved in the local Grok session summary",
+      value: currentTitle || sessionId,
+      placeHolder: "e.g. Improve session history and usage",
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        const title = value.trim();
+        if (!title) return "Title cannot be empty.";
+        if (title.length > 200) return "Keep the title under 200 characters.";
+        return undefined;
+      },
+    });
+    if (next === undefined) return;
+    await setSessionGeneratedTitle({ sessionId, title: next });
+    await vscode.commands.executeCommand("grokBuild.refreshSessionsTree");
+    await this.refreshSessionsForWebview();
+  }
+
+  private async deleteHistorySession(sessionId: string, title?: string): Promise<void> {
+    if (sessionId === this.controller.activeSessionId) {
+      void vscode.window.showWarningMessage("Start or open another conversation before deleting the active session.");
       return;
     }
     const confirm = await vscode.window.showWarningMessage(
-      `Delete session ${picked.session.title}?`,
-      { modal: true },
+      `Permanently delete “${title || sessionId}” from Grok history?`,
+      { modal: true, detail: "This uses `grok sessions delete` and cannot be undone." },
       "Delete",
     );
-    if (confirm === "Delete") {
-      await this.controller.deleteSession(picked.session.id);
-      void vscode.window.showInformationMessage("Session deleted.");
-    }
+    if (confirm !== "Delete") return;
+    await this.controller.deleteSession(sessionId);
+    await vscode.commands.executeCommand("grokBuild.refreshSessionsTree");
+    await this.refreshSessionsForWebview();
   }
 
   async showMcpManager(): Promise<void> {
@@ -916,6 +951,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       </div>
     </section>
 
+    <div id="historyBackdrop" class="history-backdrop hidden" aria-hidden="true"></div>
+    <aside id="historyPanel" class="history-panel hidden" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <header class="history-head">
+        <div>
+          <strong id="historyTitle">Conversation history</strong>
+          <span id="historySummary">Recent Grok CLI sessions in this workspace</span>
+        </div>
+        <button id="historyClose" class="history-icon-button" type="button" aria-label="Close conversation history" title="Close"><span data-icon="x"></span></button>
+      </header>
+      <div class="history-toolbar">
+        <label class="history-search" for="historySearch">
+          <span data-icon="search"></span>
+          <input id="historySearch" type="search" placeholder="Search titles, model or session ID" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="historyRefresh" class="history-icon-button" type="button" aria-label="Refresh conversation history" title="Refresh"><span data-icon="refreshCw"></span></button>
+      </div>
+      <div id="historyList" class="history-list" aria-live="polite"></div>
+      <footer class="history-footer">
+        <button id="historyNew" class="history-new-button" type="button"><span data-icon="plus"></span><span>New conversation</span></button>
+        <span>Stored by Grok CLI 1.0.3</span>
+      </footer>
+    </aside>
+
     <section id="planDock" class="plan-dock hidden" aria-label="Active plan"></section>
 
     <section id="messages" class="messages" aria-label="Conversation" aria-live="polite">
@@ -980,37 +1038,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
             </div>
           </div>
           <div class="usage-anchor">
-            <button id="usageButton" class="composer-tool-button" type="button" title="Session information" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Session</span></button>
-            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Session information">
+            <button id="usageButton" class="composer-tool-button" type="button" title="Usage and session details" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Usage</span></button>
+            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Usage and session details">
               <div class="usage-popover-head session-info-head">
                 <div>
-                  <strong>Session info</strong>
-                  <span id="usageStatus">Live details from Grok CLI and ACP</span>
+                  <strong>Usage</strong>
+                  <span id="usageStatus">Session context and account plan</span>
                 </div>
                 <div class="session-head-actions">
                   <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh session information" title="Refresh session information"><span data-icon="refreshCw"></span></button>
                   <button id="copyAllSessionInfoButton" class="session-copy-all" type="button">Copy all</button>
                 </div>
               </div>
-              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Session information sections">
-                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="session">Session</button>
-                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="context">Context</button>
-                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="account">Account</button>
+              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Usage sections">
+                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="usage">Usage</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="details">Session details</button>
               </div>
-              <section class="session-info-panel active" data-session-panel="session">
-                <div id="sessionInfoRows" class="session-info-rows"></div>
-                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
-              </section>
-              <section class="session-info-panel" data-session-panel="context">
-                <div class="usage-section">
-                  <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
+              <section class="session-info-panel usage-overview active" data-session-panel="usage">
+                <div class="usage-section usage-context-card">
+                  <div class="usage-section-title"><strong>Context window</strong><span id="usageContextPercent">—</span></div>
                   <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
                   <span id="usageDetail">Waiting for ACP session context data.</span>
                   <div id="sessionContextRows" class="usage-rows session-context-rows"></div>
                   <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
                 </div>
-              </section>
-              <section class="session-info-panel" data-session-panel="account">
                 <div class="usage-section usage-account">
                   <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
                   <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
@@ -1023,6 +1074,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
                   <span id="usageFetchedAt">Not refreshed yet</span>
                   <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
                 </div>
+              </section>
+              <section class="session-info-panel" data-session-panel="details">
+                <div id="sessionInfoRows" class="session-info-rows"></div>
+                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
               </section>
             </div>
           </div>

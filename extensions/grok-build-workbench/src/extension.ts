@@ -31,7 +31,8 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.window.registerTreeDataProvider("grokBuild.sessions", sessionTreeProvider),
     vscode.languages.registerInlineCompletionItemProvider({ pattern: "**" }, inlineCompletionProvider),
-    vscode.commands.registerCommand("grokBuild.loadSessionFromTree", (sessionId: string) => {
+    vscode.commands.registerCommand("grokBuild.loadSessionFromTree", (arg: unknown) => {
+      const sessionId = sessionIdFromTreeArg(arg);
       if (sessionId) {
         controller.loadSession(sessionId);
         sessionTreeProvider.setActiveSession(sessionId);
@@ -75,6 +76,44 @@ export function activate(context: vscode.ExtensionContext): void {
         output.error(`renameSession failed: ${message}`);
       }
     }),
+    vscode.commands.registerCommand("grokBuild.exportHistorySession", async (arg?: unknown) => {
+      const sessionId = sessionIdFromTreeArg(arg);
+      if (!sessionId) {
+        void vscode.window.showWarningMessage("Select a conversation in History first.");
+        return;
+      }
+      try {
+        await controller.exportSession(sessionId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Could not export conversation: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand("grokBuild.deleteHistorySession", async (arg?: unknown) => {
+      const sessionId = sessionIdFromTreeArg(arg);
+      if (!sessionId) {
+        void vscode.window.showWarningMessage("Select a conversation in History first.");
+        return;
+      }
+      if (sessionId === controller.activeSessionId) {
+        void vscode.window.showWarningMessage("Start or open another conversation before deleting the active session.");
+        return;
+      }
+      const title = sessionTitleFromTreeArg(arg) ?? sessionId;
+      const confirm = await vscode.window.showWarningMessage(
+        `Permanently delete “${title}” from Grok history?`,
+        { modal: true },
+        "Delete",
+      );
+      if (confirm !== "Delete") return;
+      try {
+        await controller.deleteSession(sessionId);
+        sessionTreeProvider.refresh();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Could not delete conversation: ${message}`);
+      }
+    }),
     vscode.commands.registerCommand("grokBuild.connect", () => controller.connect()),
     vscode.commands.registerCommand("grokBuild.disconnect", () => controller.disconnect()),
     vscode.commands.registerCommand("grokBuild.newSession", () => {
@@ -88,7 +127,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("grokBuild.exportSession", () =>
       controller.exportActiveSession(),
     ),
-    vscode.commands.registerCommand("grokBuild.sessions", () => provider.showSessionBrowser()),
+    vscode.commands.registerCommand("grokBuild.sessions", () => provider.showHistoryPanel()),
     vscode.commands.registerCommand("grokBuild.mcp", () => provider.showMcpManager()),
     vscode.commands.registerCommand("grokBuild.worktree", () => provider.showWorktreeManager()),
     vscode.commands.registerCommand("grokBuild.plugins", () => provider.showPluginManager()),

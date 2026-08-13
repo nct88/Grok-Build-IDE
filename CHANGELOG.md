@@ -2,6 +2,14 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.8 — 2026-08-13
+
+- Rebuilt History as a searchable in-Agent drawer with date groups, active-session state and direct resume, rename, export, delete, refresh and new-conversation actions.
+- Enriched the native VS Code History tree with clearer metadata, tooltips and export/delete actions, while removing the redundant two-step session picker.
+- Made Desktop-style Usage the primary view by combining context-window progress, cumulative session tokens and account-plan details.
+- Moved technical session metadata into a secondary Session details view and added a compact context percentage to the Usage control.
+- Expanded responsive visual coverage to eight scenarios for narrow/wide layouts, 150% scale, light/dark themes and history/usage empty and error states.
+
 ## 1.0.7 — 2026-08-13
 
 - Added a Grok CLI 1.0.3-style Session info surface with separate Session, Context and Account tabs.

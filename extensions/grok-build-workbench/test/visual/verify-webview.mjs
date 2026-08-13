@@ -6,6 +6,8 @@ import { chromium } from "playwright";
 const visualRoot = dirname(fileURLToPath(import.meta.url));
 const harnessUrl = pathToFileURL(join(visualRoot, "harness.html"));
 const extensionPackage = JSON.parse(await readFile(join(visualRoot, "..", "..", "package.json"), "utf8"));
+const productionHtmlSource = await readFile(join(visualRoot, "..", "..", "src", "vscode", "chatViewProvider.ts"), "utf8");
+const harnessHtmlSource = await readFile(join(visualRoot, "harness.html"), "utf8");
 const evidenceDir = join(visualRoot, "evidence", extensionPackage.version);
 const scenarios = [
   { name: "dark-markdown-240x720", theme: "dark", fixture: "markdown", width: 240, height: 720, scale: 1 },
@@ -13,10 +15,30 @@ const scenarios = [
   { name: "dark-long-600x900", theme: "dark", fixture: "long", width: 600, height: 900, scale: 1 },
   { name: "dark-long-600x900-150pct", theme: "dark", fixture: "long", width: 600, height: 900, scale: 1.5 },
   { name: "dark-usage-error-390x720", theme: "dark", fixture: "usage-error", width: 390, height: 720, scale: 1 },
+  { name: "light-history-many-390x720", theme: "light", fixture: "history-many", width: 390, height: 720, scale: 1 },
+  { name: "dark-history-empty-240x720", theme: "dark", fixture: "history-empty", width: 240, height: 720, scale: 1 },
+  { name: "dark-history-error-390x720", theme: "dark", fixture: "history-error", width: 390, height: 720, scale: 1 },
 ];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+for (const fragment of [
+  'id="historyPanel"',
+  'id="historySearch"',
+  'id="historyList"',
+  'data-session-tab="usage"',
+  'data-session-tab="details"',
+  'data-session-panel="usage"',
+  'data-session-panel="details"',
+]) {
+  assert(productionHtmlSource.includes(fragment), `production webview is missing ${fragment}`);
+  assert(harnessHtmlSource.includes(fragment), `visual harness drifted from production: missing ${fragment}`);
+}
+for (const obsolete of ['data-session-tab="context"', 'data-session-tab="account"']) {
+  assert(!productionHtmlSource.includes(obsolete), `production webview still includes obsolete ${obsolete}`);
+  assert(!harnessHtmlSource.includes(obsolete), `visual harness still includes obsolete ${obsolete}`);
 }
 
 await mkdir(evidenceDir, { recursive: true });
@@ -138,7 +160,12 @@ try {
     assert(geometry.usageSession && geometry.usageAccount, `${scenario.name}: usage session/account sections missing`);
 
     await page.locator("#usageButton").click();
-    await page.locator("#sessionInfoRows .session-info-row").first().waitFor();
+    await page.locator("#sessionContextRows .usage-row").first().waitFor();
+    if (scenario.fixture === "usage-error") {
+      await page.locator("#accountUsageError").filter({ hasText: "Session expired" }).waitFor();
+    } else {
+      await page.locator("#accountUsagePercent").filter({ hasText: "37.5%" }).waitFor();
+    }
     const sessionGeometry = await page.locator("#usagePopover").evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
@@ -148,8 +175,10 @@ try {
         bottom: rect.bottom,
         width: rect.width,
         horizontalOverflow: element.scrollWidth > element.clientWidth,
-        rows: element.querySelectorAll("#sessionInfoRows .session-info-row").length,
+        contextRows: element.querySelectorAll("#sessionContextRows .usage-row").length,
+        accountRows: element.querySelectorAll("#accountUsageRows .usage-row").length,
         sessionRefreshPosted: window.__postedMessages.some((message) => message.type === "refreshSessionInfo"),
+        accountRefreshPosted: window.__postedMessages.some((message) => message.type === "refreshUsage"),
       };
     });
     assert(sessionGeometry.left >= -2, `${scenario.name}: session info clips left (${sessionGeometry.left.toFixed(1)}..${sessionGeometry.right.toFixed(1)})`);
@@ -157,8 +186,20 @@ try {
     assert(sessionGeometry.top >= -1 && sessionGeometry.bottom <= scenario.height + 1, `${scenario.name}: session info clips vertically`);
     assert(sessionGeometry.width >= Math.min(200, scenario.width - 16), `${scenario.name}: session info is unexpectedly narrow`);
     assert(!sessionGeometry.horizontalOverflow, `${scenario.name}: session info has horizontal overflow`);
-    assert(sessionGeometry.rows >= 12, `${scenario.name}: rich session metadata rows are incomplete`);
-    assert(sessionGeometry.sessionRefreshPosted, `${scenario.name}: opening Session did not request session data`);
+    assert(sessionGeometry.contextRows >= 6, `${scenario.name}: cumulative session counters are incomplete`);
+    assert(sessionGeometry.sessionRefreshPosted, `${scenario.name}: opening Usage did not request session data`);
+    assert(sessionGeometry.accountRefreshPosted, `${scenario.name}: opening Usage did not request account data`);
+    await page.screenshot({
+      path: join(evidenceDir, `${scenario.name}-usage-open.png`),
+      fullPage: false,
+    });
+
+    await page.locator('[data-session-tab="details"]').click();
+    await page.locator("#sessionInfoRows .session-info-row").first().waitFor();
+    assert(
+      await page.locator("#sessionInfoRows .session-info-row").count() >= 12,
+      `${scenario.name}: rich session metadata rows are incomplete`,
+    );
     await page.locator("#sessionInfoRows .session-info-row").first().click();
     assert(await page.evaluate(() => Boolean(document.body.dataset.copiedText)), `${scenario.name}: row copy did not post clipboard text`);
     await page.locator("#copyAllSessionInfoButton").click();
@@ -167,28 +208,13 @@ try {
       `${scenario.name}: Copy all omitted session fields`,
     );
     await page.screenshot({
-      path: join(evidenceDir, `${scenario.name}-session-info-open.png`),
+      path: join(evidenceDir, `${scenario.name}-details-open.png`),
       fullPage: false,
     });
 
-    await page.locator('[data-session-tab="context"]').click();
+    await page.locator('[data-session-tab="usage"]').click();
     const contextFillWidth = await page.locator("#usageContextBar").evaluate((element) => element.getBoundingClientRect().width);
     assert(contextFillWidth > 0, `${scenario.name}: session context progress is empty`);
-    assert(
-      await page.locator("#sessionContextRows .usage-row").count() >= 6,
-      `${scenario.name}: cumulative session counters are incomplete`,
-    );
-    await page.screenshot({
-      path: join(evidenceDir, `${scenario.name}-context-open.png`),
-      fullPage: false,
-    });
-
-    await page.locator('[data-session-tab="account"]').click();
-    if (scenario.fixture === "usage-error") {
-      await page.locator("#accountUsageError").filter({ hasText: "Session expired" }).waitFor();
-    } else {
-      await page.locator("#accountUsagePercent").filter({ hasText: "37.5%" }).waitFor();
-    }
     await page.waitForTimeout(220);
     const usageGeometry = await page.locator("#usagePopover").evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -225,8 +251,22 @@ try {
       assert(usageGeometry.accountFillWidth > 0, `${scenario.name}: account plan progress is empty (fill=${usageGeometry.accountFillWidth}, wrap=${usageGeometry.accountWrapWidth}, style=${usageGeometry.accountFillStyle})`);
       assert(usageGeometry.accountRows >= 4, `${scenario.name}: account usage rows are incomplete`);
     }
-    assert(usageGeometry.refreshPosted, `${scenario.name}: opening Account did not request account data`);
+    assert(usageGeometry.refreshPosted, `${scenario.name}: opening Usage did not request account data`);
     assert(usageGeometry.manageLabel.includes("Manage usage"), `${scenario.name}: manage usage action missing`);
+    const usageScroll = await page.locator('.session-info-panel[data-session-panel="usage"]').evaluate((element) => {
+      const scrollable = element.scrollHeight > element.clientHeight;
+      const before = element.scrollTop;
+      if (scrollable) element.scrollTop = element.scrollHeight;
+      const action = element.querySelector("#manageUsageButton")?.getBoundingClientRect();
+      const bounds = element.getBoundingClientRect();
+      return {
+        scrollable,
+        moved: element.scrollTop > before,
+        actionReachable: Boolean(action && action.bottom <= bounds.bottom + 1 && action.top >= bounds.top - 1),
+      };
+    });
+    assert(!usageScroll.scrollable || usageScroll.moved, `${scenario.name}: usage content cannot scroll`);
+    assert(usageScroll.actionReachable, `${scenario.name}: account actions are not reachable`);
     await page.locator("#manageUsageButton").click();
     const manageRequest = await page.evaluate(() =>
       window.__postedMessages.findLast((message) => message.type === "openExternal"),
@@ -236,10 +276,70 @@ try {
       `${scenario.name}: Manage usage did not post a safe Grok URL`,
     );
     await page.screenshot({
-      path: join(evidenceDir, `${scenario.name}-account-open.png`),
+      path: join(evidenceDir, `${scenario.name}-usage-account.png`),
       fullPage: false,
     });
     await page.locator("#usageButton").click();
+
+    await page.locator("#sessionsButton").click();
+    await page.locator("#historyPanel").waitFor({ state: "visible" });
+    await page.waitForTimeout(20);
+    const historyGeometry = await page.locator("#historyPanel").evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const list = element.querySelector("#historyList");
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        horizontalOverflow: element.scrollWidth > element.clientWidth,
+        rows: element.querySelectorAll(".history-row").length,
+        groups: element.querySelectorAll(".history-group-title").length,
+        listScrollable: list.scrollHeight > list.clientHeight,
+      };
+    });
+    assert(historyGeometry.left >= -1 && historyGeometry.right <= scenario.width + 1, `${scenario.name}: history clips horizontally`);
+    assert(historyGeometry.top >= -1 && historyGeometry.bottom <= scenario.height + 1, `${scenario.name}: history clips vertically`);
+    assert(!historyGeometry.horizontalOverflow, `${scenario.name}: history has horizontal overflow`);
+    if (scenario.fixture === "history-empty" || scenario.fixture === "history-error") {
+      assert(historyGeometry.rows === 0, `${scenario.name}: empty history rendered rows`);
+      assert(await page.locator(".history-empty").isVisible(), `${scenario.name}: empty history guidance missing`);
+      if (scenario.fixture === "history-error") {
+        assert(
+          await page.locator(".history-empty").getByText("Could not load history").isVisible(),
+          `${scenario.name}: history error guidance missing`,
+        );
+      }
+    } else {
+      assert(historyGeometry.rows >= 7, `${scenario.name}: history rows are incomplete`);
+      assert(historyGeometry.groups >= 2, `${scenario.name}: history date grouping missing`);
+      assert(
+        await page.locator('.history-row.active [aria-label^="Active session cannot be deleted"]').isDisabled(),
+        `${scenario.name}: active session delete action must be disabled`,
+      );
+      if (scenario.fixture === "history-many") {
+        assert(historyGeometry.listScrollable, `${scenario.name}: many-item history does not scroll locally`);
+      }
+      await page.locator("#historySearch").fill("clipboard");
+      const filteredHistory = await page.locator(".history-row .history-row-open strong").allTextContents();
+      assert(
+        filteredHistory.length >= 1 && filteredHistory.every((title) => title.toLowerCase().includes("clipboard")),
+        `${scenario.name}: history search did not filter titles`,
+      );
+      await page.locator("#historySearch").fill("");
+      const second = page.locator(".history-row").nth(1);
+      await second.locator('[aria-label^="Rename"]').click();
+      await second.locator('[aria-label^="Export Markdown"]').click();
+      await second.locator('[aria-label^="Delete"]').click();
+      assert(await page.evaluate(() => Boolean(document.body.dataset.renameSession)), `${scenario.name}: history rename action missing`);
+      assert(await page.evaluate(() => Boolean(document.body.dataset.exportSession)), `${scenario.name}: history export action missing`);
+      assert(await page.evaluate(() => Boolean(document.body.dataset.deleteSession)), `${scenario.name}: history delete action missing`);
+    }
+    await page.screenshot({
+      path: join(evidenceDir, `${scenario.name}-history-open.png`),
+      fullPage: false,
+    });
+    await page.locator("#historyClose").click();
 
     // Completed fixtures keep controls enabled; long fixtures intentionally
     // remain in a pending permission state and verify that surface instead.
@@ -247,13 +347,20 @@ try {
       await page.locator("#permissionButton").click();
       const menu = page.locator("#permissionMenu");
       await menu.waitFor({ state: "visible" });
-      await page.locator("#modelButton").click();
-      await page.locator("#modelMenu").waitFor({ state: "visible" });
+      if (scenario.width > 260) {
+        await page.locator("#modelButton").click();
+        await page.locator("#modelMenu").waitFor({ state: "visible" });
+      } else {
+        assert(!(await page.locator("#modelButton").isVisible()), `${scenario.name}: model control should collapse before overlapping Usage`);
+      }
       if (scenario.width > 300) {
         await page.locator("#effortButton").click();
         await page.locator("#effortMenu").waitFor({ state: "visible" });
       } else {
         assert(!(await page.locator("#effortButton").isVisible()), `${scenario.name}: effort control should collapse before overlapping Usage`);
+      }
+      if (await menu.isVisible()) {
+        await page.locator("#permissionButton").click();
       }
       await page.locator("#permissionButton").click();
       await menu.waitFor({ state: "visible" });

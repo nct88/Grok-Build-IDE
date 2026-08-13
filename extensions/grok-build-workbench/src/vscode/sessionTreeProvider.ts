@@ -10,10 +10,22 @@ export class SessionTreeItem extends vscode.TreeItem {
     const label = summary.title || (summary.id.length > 12 ? `${summary.id.slice(0, 10)}…` : summary.id);
     super(label, vscode.TreeItemCollapsibleState.None);
 
-    const timeStr = summary.updatedAt ? new Date(summary.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-    this.description = isActive ? `Active · ${timeStr}` : timeStr;
-    this.tooltip = `${summary.title}\n\nSession: ${summary.id}\nUpdated: ${summary.updatedAt || "N/A"}\nMessages: ${summary.messageCount ?? 0}`;
-    this.iconPath = new vscode.ThemeIcon(isActive ? "comment-discussion" : "history");
+    const updated = summary.updatedAt ? new Date(summary.updatedAt) : null;
+    const timeStr = updated && !Number.isNaN(updated.getTime())
+      ? updated.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "Unknown time";
+    const messages = `${summary.messageCount ?? 0} msg${summary.messageCount === 1 ? "" : "s"}`;
+    this.description = [isActive ? "Active" : timeStr, messages, summary.model].filter(Boolean).join(" · ");
+    const tooltip = new vscode.MarkdownString(undefined, true);
+    tooltip.appendMarkdown(`**${summary.title || "Untitled chat"}**\n\n`);
+    tooltip.appendMarkdown(`${isActive ? "$(circle-filled) Active session  \n" : ""}`);
+    tooltip.appendMarkdown(`$(clock) ${timeStr}  \n`);
+    tooltip.appendMarkdown(`$(comment) ${messages}  \n`);
+    if (summary.model) tooltip.appendMarkdown(`$(sparkle) ${summary.model}${summary.reasoningEffort ? ` · ${summary.reasoningEffort}` : ""}  \n`);
+    tooltip.appendMarkdown(`$(folder) ${summary.cwd}  \n\n`);
+    tooltip.appendCodeblock(summary.id);
+    this.tooltip = tooltip;
+    this.iconPath = new vscode.ThemeIcon(isActive ? "comment-discussion" : "comment");
     this.contextValue = isActive ? "activeSession" : "session";
 
     this.command = {
@@ -61,12 +73,9 @@ export class SessionTreeDataProvider
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  private activeSessionId: string | undefined;
-
   constructor(private readonly controller: GrokController) {}
 
-  setActiveSession(sessionId: string | undefined): void {
-    this.activeSessionId = sessionId;
+  setActiveSession(_sessionId: string | undefined): void {
     this.refresh();
   }
 
@@ -86,7 +95,7 @@ export class SessionTreeDataProvider
       const summaries = await this.controller.listLocalSessions();
       return summaries.map(
         (summary: GrokSessionSummary) =>
-          new SessionTreeItem(summary, summary.id === this.activeSessionId),
+          new SessionTreeItem(summary, summary.id === this.controller.activeSessionId),
       );
     } catch {
       return [];

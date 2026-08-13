@@ -104,6 +104,22 @@
         <span aria-hidden="true">·</span><span id="runtimeInfo" class="truncate" title="ACP runtime">ACP</span>
       </div>
     </section>
+    <div id="historyBackdrop" class="history-backdrop hidden" aria-hidden="true"></div>
+    <aside id="historyPanel" class="history-panel hidden" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <header class="history-head">
+        <div><strong id="historyTitle">Conversation history</strong><span id="historySummary">Recent Grok CLI sessions in this workspace</span></div>
+        <button id="historyClose" class="history-icon-button" type="button" aria-label="Close conversation history" title="Close"><span data-icon="x"></span></button>
+      </header>
+      <div class="history-toolbar">
+        <label class="history-search" for="historySearch"><span data-icon="search"></span><input id="historySearch" type="search" placeholder="Search titles, model or session ID" autocomplete="off" spellcheck="false"></label>
+        <button id="historyRefresh" class="history-icon-button" type="button" aria-label="Refresh conversation history" title="Refresh"><span data-icon="refreshCw"></span></button>
+      </div>
+      <div id="historyList" class="history-list" aria-live="polite"></div>
+      <footer class="history-footer">
+        <button id="historyNew" class="history-new-button" type="button"><span data-icon="plus"></span><span>New conversation</span></button>
+        <span>Stored by Grok CLI 1.0.3</span>
+      </footer>
+    </aside>
     <section id="planDock" class="plan-dock hidden" aria-label="Active plan"></section>
     <section id="messages" class="messages" aria-label="Conversation" aria-live="polite">
       <div id="emptyState" class="empty-state">
@@ -160,37 +176,30 @@
             </div>
           </div>
           <div class="usage-anchor">
-            <button id="usageButton" class="composer-tool-button" type="button" title="Session information" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Session</span></button>
-            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Session information">
+            <button id="usageButton" class="composer-tool-button" type="button" title="Usage and session details" aria-expanded="false" aria-controls="usagePopover"><span data-icon="gauge"></span><span id="usageLabel">Usage</span></button>
+            <div id="usagePopover" class="usage-popover hidden" role="dialog" aria-label="Usage and session details">
               <div class="usage-popover-head session-info-head">
                 <div>
-                  <strong>Session info</strong>
-                  <span id="usageStatus">Live details from Grok CLI and ACP</span>
+                  <strong>Usage</strong>
+                  <span id="usageStatus">Session context and account plan</span>
                 </div>
                 <div class="session-head-actions">
                   <button id="refreshUsageButton" class="usage-icon-button" type="button" aria-label="Refresh session information" title="Refresh session information"><span data-icon="refreshCw"></span></button>
                   <button id="copyAllSessionInfoButton" class="session-copy-all" type="button">Copy all</button>
                 </div>
               </div>
-              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Session information sections">
-                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="session">Session</button>
-                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="context">Context</button>
-                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="account">Account</button>
+              <div id="sessionInfoTabs" class="session-info-tabs" role="tablist" aria-label="Usage sections">
+                <button class="session-info-tab active" type="button" role="tab" aria-selected="true" data-session-tab="usage">Usage</button>
+                <button class="session-info-tab" type="button" role="tab" aria-selected="false" data-session-tab="details">Session details</button>
               </div>
-              <section class="session-info-panel active" data-session-panel="session">
-                <div id="sessionInfoRows" class="session-info-rows"></div>
-                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
-              </section>
-              <section class="session-info-panel" data-session-panel="context">
-                <div class="usage-section">
-                  <div class="usage-section-title"><strong>Session context</strong><span id="usageContextPercent">—</span></div>
+              <section class="session-info-panel usage-overview active" data-session-panel="usage">
+                <div class="usage-section usage-context-card">
+                  <div class="usage-section-title"><strong>Context window</strong><span id="usageContextPercent">—</span></div>
                   <div id="usageContextBarWrap" class="usage-progress" role="progressbar" aria-label="Session context used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="usageContextBar"></span></div>
                   <span id="usageDetail">Waiting for ACP session context data.</span>
                   <div id="sessionContextRows" class="usage-rows session-context-rows"></div>
                   <span id="sessionTurnUsage" class="usage-turn">Last turn: waiting for token counts…</span>
                 </div>
-              </section>
-              <section class="session-info-panel" data-session-panel="account">
                 <div class="usage-section usage-account">
                   <div class="usage-section-title"><strong id="accountUsageTitle">Plan limit</strong><span id="accountUsagePercent">—</span></div>
                   <div id="accountUsageBarWrap" class="usage-progress" role="progressbar" aria-label="Account plan used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="accountUsageBar"></span></div>
@@ -201,6 +210,10 @@
                   <span id="usageFetchedAt">Not refreshed yet</span>
                   <button id="manageUsageButton" class="usage-link-button" type="button">Manage usage <span data-icon="externalLink"></span></button>
                 </div>
+              </section>
+              <section class="session-info-panel" data-session-panel="details">
+                <div id="sessionInfoRows" class="session-info-rows"></div>
+                <span id="sessionInfoEmpty" class="usage-empty">Connect to start a session.</span>
               </section>
             </div>
           </div>
@@ -300,6 +313,33 @@
       }));
     }
 
+    function emitSessions() {
+      const many = fixture === "history-many";
+      const empty = fixture === "history-empty";
+      const count = empty ? 0 : many ? 18 : 7;
+      const titles = [
+        "Improve history and usage interface",
+        "Release Grok Build IDE with verified artifacts",
+        "Fix clipboard image paste in paths with spaces",
+        "Review workspace architecture and boundary contracts",
+        "Add responsive session information",
+        "Investigate model selection and permission modes",
+        "Refactor MCP server management",
+      ];
+      const sessions = Array.from({ length: count }, (_, index) => ({
+        id: index === 0 ? "81f5b741-e66d-4a7f-a10a-b2f3799e27db" : `019ffa59-6c03-78d1-8ded-${String(index).padStart(12, "0")}`,
+        cwd: "H:\\projects\\grok-code",
+        title: titles[index % titles.length] + (index > titles.length - 1 ? ` ${index + 1}` : ""),
+        model: index % 2 ? "grok-code-fast" : "grok-4.5",
+        reasoningEffort: index % 3 ? "high" : "xhigh",
+        messageCount: 4 + index * 3,
+        updatedAt: new Date(Date.now() - index * 28_800_000).toISOString(),
+      }));
+      window.dispatchEvent(new MessageEvent("message", {
+        data: { type: "session_list", state: "ready", sessions, activeSessionId: sessions[0]?.id || null },
+      }));
+    }
+
     window.__postedMessages = [];
 
     window.acquireVsCodeApi = () => ({
@@ -349,6 +389,22 @@
           document.body.dataset.toolsHubRequested = "true";
         } else if (message.type === "sessions") {
           document.body.dataset.sessionsRequested = "true";
+          window.dispatchEvent(new MessageEvent("message", { data: { type: "session_list", state: "loading" } }));
+          if (fixture === "history-error") {
+            setTimeout(() => window.dispatchEvent(new MessageEvent("message", {
+              data: { type: "session_list", state: "error", error: "Grok session storage is temporarily unavailable." },
+            })), 0);
+          } else {
+            setTimeout(() => emitSessions(), 0);
+          }
+        } else if (message.type === "resumeSession") {
+          document.body.dataset.resumeSession = message.sessionId;
+        } else if (message.type === "renameSession") {
+          document.body.dataset.renameSession = message.sessionId;
+        } else if (message.type === "exportHistorySession") {
+          document.body.dataset.exportSession = message.sessionId;
+        } else if (message.type === "deleteSession") {
+          document.body.dataset.deleteSession = message.sessionId;
         } else if (message.type === "settings") {
           document.body.dataset.settingsRequested = "true";
         } else if (message.type === "permissionResponse") {

@@ -435,6 +435,10 @@ export class GrokController implements vscode.Disposable {
     if (!sessionId) {
       throw new Error("No active session to export.");
     }
+    await this.exportSession(sessionId);
+  }
+
+  async exportSession(sessionId: string): Promise<void> {
     const config = vscode.workspace.getConfiguration("grokBuild");
     const executable = resolveGrokExecutable(config.get<string>("executablePath", "grok"));
     const folder = vscode.workspace.workspaceFolders?.[0];

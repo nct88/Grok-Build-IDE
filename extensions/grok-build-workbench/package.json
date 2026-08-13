@@ -3,7 +3,7 @@
   "displayName": "Grok Build IDE",
   "icon": "logo/grok-fluffy.png",
   "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "publisher": "local-grok-workbench",
   "license": "MIT",
   "private": true,
@@ -40,6 +40,8 @@
     "onCommand:grokBuild.sessions",
     "onView:grokBuild.sessions",
     "onCommand:grokBuild.renameSession",
+    "onCommand:grokBuild.exportHistorySession",
+    "onCommand:grokBuild.deleteHistorySession",
     "onCommand:grokBuild.mcp",
     "onCommand:grokBuild.worktree",
     "onCommand:grokBuild.plugins",
@@ -235,6 +237,18 @@
         "title": "Rename Conversation…",
         "category": "Grok Build",
         "icon": "$(edit)"
+      },
+      {
+        "command": "grokBuild.exportHistorySession",
+        "title": "Export Conversation as Markdown",
+        "category": "Grok Build",
+        "icon": "$(export)"
+      },
+      {
+        "command": "grokBuild.deleteHistorySession",
+        "title": "Delete Conversation…",
+        "category": "Grok Build",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -295,6 +309,16 @@
           "command": "grokBuild.loadSessionFromTree",
           "when": "view == grokBuild.sessions && viewItem =~ /session/",
           "group": "0_navigation@1"
+        },
+        {
+          "command": "grokBuild.exportHistorySession",
+          "when": "view == grokBuild.sessions && viewItem =~ /session/",
+          "group": "0_navigation@2"
+        },
+        {
+          "command": "grokBuild.deleteHistorySession",
+          "when": "view == grokBuild.sessions && viewItem == session",
+          "group": "2_danger@1"
         }
       ]
     },
@@ -580,7 +604,7 @@
     "test:visual": "node test/visual/verify-webview.mjs",
     "check": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production && node ../../scripts/check-grok-release-contract.mjs && node test/visual/verify-webview.mjs",
     "vscode:prepublish": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production",
-    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.7.vsix"
+    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.8.vsix"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.3.0",

@@ -67,6 +67,14 @@
   const statusText = byId("statusText");
   const connectionButton = byId("connectionButton");
   const sessionsButton = byId("sessionsButton");
+  const historyBackdrop = byId("historyBackdrop");
+  const historyPanel = byId("historyPanel");
+  const historyClose = byId("historyClose");
+  const historySearch = byId("historySearch");
+  const historyRefresh = byId("historyRefresh");
+  const historyList = byId("historyList");
+  const historySummary = byId("historySummary");
+  const historyNew = byId("historyNew");
   const workspaceButton = byId("workspaceButton");
   const openIdeButton = byId("openIdeButton");
   const openIdeLabel = byId("openIdeLabel");
@@ -154,6 +162,10 @@
   let accountUsageLoaded = false;
   let accountUsageManageUrl = "https://grok.com?_s=usage";
   let lastSessionInfoSnapshot = null;
+  let currentSessionId = null;
+  let historySessions = [];
+  let historyLoading = false;
+  let historyError = "";
   let recognition;
   let listening = false;
   let voiceBase = "";
@@ -469,15 +481,165 @@
   }
 
   function updateSession(sessionId, resumed) {
+    currentSessionId = sessionId;
     const shortId = sessionId.length > 12 ? `${sessionId.slice(0, 10)}…` : sessionId;
     sessionInfo.textContent = resumed ? `${shortId} (resumed)` : shortId;
     sessionInfo.title = `Session ${sessionId}`;
-    usageLabel.textContent = "Session";
+    usageLabel.textContent = "Usage";
     usageContextPercent.textContent = "—";
     setUsageProgress(usageContextBar, usageContextBarWrap, null);
     usageDetail.textContent = "Waiting for ACP session context data.";
     const sessionTurn = byId("sessionTurnUsage");
     if (sessionTurn) sessionTurn.textContent = "Last turn: waiting for token counts…";
+  }
+
+  function historyDateGroup(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Older";
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const days = Math.round((start - day) / 86_400_000);
+    if (days <= 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return "Previous 7 days";
+    if (date.getFullYear() === now.getFullYear()) {
+      return date.toLocaleDateString(undefined, { month: "long" });
+    }
+    return String(date.getFullYear());
+  }
+
+  function historyTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Unknown time";
+    const elapsed = Date.now() - date.getTime();
+    if (elapsed >= 0 && elapsed < 60_000) return "Just now";
+    if (elapsed >= 0 && elapsed < 3_600_000) return `${Math.max(1, Math.floor(elapsed / 60_000))}m ago`;
+    if (elapsed >= 0 && elapsed < 86_400_000) return `${Math.max(1, Math.floor(elapsed / 3_600_000))}h ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function historyAction(icon, label, action, session, disabled = false) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `history-row-action${action === "deleteSession" ? " danger" : ""}`;
+    button.title = label;
+    button.setAttribute("aria-label", `${label}: ${session.title}`);
+    button.disabled = disabled;
+    button.append(createIcon(icon));
+    button.addEventListener("click", () => {
+      vscode.postMessage({ type: action, sessionId: session.id, title: session.title });
+    });
+    return button;
+  }
+
+  function renderHistory() {
+    historyList.replaceChildren();
+    if (historyLoading) {
+      historySummary.textContent = "Loading Grok CLI sessions…";
+      for (let index = 0; index < 4; index += 1) {
+        const skeleton = document.createElement("div");
+        skeleton.className = "history-skeleton";
+        skeleton.append(document.createElement("span"), document.createElement("span"));
+        historyList.append(skeleton);
+      }
+      return;
+    }
+    if (historyError) {
+      historySummary.textContent = "History unavailable";
+      const empty = document.createElement("div");
+      empty.className = "history-empty";
+      const title = document.createElement("strong");
+      title.textContent = "Could not load history";
+      const hint = document.createElement("span");
+      hint.textContent = historyError;
+      empty.append(title, hint);
+      historyList.append(empty);
+      return;
+    }
+    const query = historySearch.value.trim().toLocaleLowerCase();
+    const filtered = historySessions.filter((session) => {
+      const haystack = [session.title, session.id, session.model, session.reasoningEffort, session.cwd]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase();
+      return !query || haystack.includes(query);
+    });
+    historySummary.textContent = query
+      ? `${filtered.length} of ${historySessions.length} conversations`
+      : `${historySessions.length} recent conversation${historySessions.length === 1 ? "" : "s"}`;
+    if (!filtered.length) {
+      const empty = document.createElement("div");
+      empty.className = "history-empty";
+      const title = document.createElement("strong");
+      title.textContent = query ? "No matching conversations" : "No conversations yet";
+      const hint = document.createElement("span");
+      hint.textContent = query ? "Try a title, model, or session ID." : "Start a task and it will appear here.";
+      empty.append(title, hint);
+      historyList.append(empty);
+      return;
+    }
+    let lastGroup = "";
+    for (const session of filtered) {
+      const group = historyDateGroup(session.updatedAt);
+      if (group !== lastGroup) {
+        const heading = document.createElement("h3");
+        heading.className = "history-group-title";
+        heading.textContent = group;
+        historyList.append(heading);
+        lastGroup = group;
+      }
+      const row = document.createElement("article");
+      const active = session.id === currentSessionId;
+      row.className = `history-row${active ? " active" : ""}`;
+      row.dataset.sessionId = session.id;
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "history-row-open";
+      open.title = `Resume ${session.title}`;
+      const title = document.createElement("strong");
+      title.textContent = session.title || "Untitled chat";
+      const meta = document.createElement("span");
+      const workspace = String(session.cwd || "").split(/[\\/]/).filter(Boolean).pop();
+      meta.textContent = [
+        active ? "Active" : historyTime(session.updatedAt),
+        session.model,
+        session.messageCount ? `${session.messageCount} messages` : null,
+        workspace,
+      ].filter(Boolean).join(" · ");
+      open.append(title, meta);
+      open.addEventListener("click", () => {
+        vscode.postMessage({ type: "resumeSession", sessionId: session.id });
+        closeHistoryPanel();
+      });
+      const actions = document.createElement("div");
+      actions.className = "history-row-actions";
+      actions.append(
+        historyAction("pencil", "Rename", "renameSession", session),
+        historyAction("externalLink", "Export Markdown", "exportHistorySession", session),
+        historyAction("trash", active ? "Active session cannot be deleted" : "Delete", "deleteSession", session, active),
+      );
+      row.append(open, actions);
+      historyList.append(row);
+    }
+  }
+
+  function openHistoryPanel() {
+    usagePopover.classList.add("hidden");
+    usageButton.setAttribute("aria-expanded", "false");
+    historyPanel.classList.remove("hidden");
+    historyBackdrop.classList.remove("hidden");
+    historyLoading = true;
+    historyError = "";
+    renderHistory();
+    vscode.postMessage({ type: "sessions" });
+    requestAnimationFrame(() => historySearch.focus());
+  }
+
+  function closeHistoryPanel() {
+    historyPanel.classList.add("hidden");
+    historyBackdrop.classList.add("hidden");
+    sessionsButton.focus();
   }
 
   function setState(next, detail) {
@@ -1337,7 +1499,7 @@
     for (const panel of usagePopover.querySelectorAll("[data-session-panel]")) {
       panel.classList.toggle("active", panel.dataset.sessionPanel === id);
     }
-    if (id === "account" && !accountUsageLoaded) vscode.postMessage({ type: "refreshUsage" });
+    if (id === "usage" && !accountUsageLoaded) vscode.postMessage({ type: "refreshUsage" });
   }
 
   function copyAllSessionInfo() {
@@ -1675,6 +1837,25 @@
       renderSessionInfo(message.data);
       return;
     }
+    if (message.data?.type === "session_list") {
+      historyLoading = message.data.state === "loading";
+      historyRefresh.disabled = historyLoading;
+      historyRefresh.classList.toggle("loading", historyLoading);
+      if (message.data.state === "ready") {
+        historySessions = Array.isArray(message.data.sessions) ? message.data.sessions : [];
+        currentSessionId = message.data.activeSessionId || currentSessionId;
+        historyError = "";
+      } else if (message.data.state === "error") {
+        historySessions = [];
+        historyError = message.data.error || "Could not load conversation history.";
+      }
+      renderHistory();
+      return;
+    }
+    if (message.data?.type === "open_history") {
+      openHistoryPanel();
+      return;
+    }
     if (message.data?.type === "copy_result") {
       usageStatus.textContent = message.data.ok ? "Copied to clipboard" : "Could not copy";
       return;
@@ -1742,7 +1923,7 @@
     railNewConversation.addEventListener("click", () => vscode.postMessage({ type: "newSession" }));
   }
   if (railHistory) {
-    railHistory.addEventListener("click", () => vscode.postMessage({ type: "sessions" }));
+    railHistory.addEventListener("click", openHistoryPanel);
   }
   if (railProjects) {
     railProjects.addEventListener("click", () => vscode.postMessage({ type: "openExplorer" }));
@@ -1762,7 +1943,20 @@
   });
   settingsButton.addEventListener("click", () => vscode.postMessage({ type: "settings" }));
   toolsButton.addEventListener("click", () => vscode.postMessage({ type: "toolsHub" }));
-  sessionsButton.addEventListener("click", () => vscode.postMessage({ type: "sessions" }));
+  sessionsButton.addEventListener("click", openHistoryPanel);
+  historyClose.addEventListener("click", closeHistoryPanel);
+  historyBackdrop.addEventListener("click", closeHistoryPanel);
+  historySearch.addEventListener("input", renderHistory);
+  historyRefresh.addEventListener("click", () => {
+    historyLoading = true;
+    historyError = "";
+    renderHistory();
+    vscode.postMessage({ type: "sessions" });
+  });
+  historyNew.addEventListener("click", () => {
+    closeHistoryPanel();
+    vscode.postMessage({ type: "newSession" });
+  });
   layoutButton.addEventListener("click", () => vscode.postMessage({ type: "layout" }));
   permissionButton.addEventListener("click", () => {
     const open = permissionMenu.classList.contains("hidden");
@@ -1816,15 +2010,16 @@
       : !open;
     usagePopover.classList.toggle("hidden", hidden);
     usageButton.setAttribute("aria-expanded", String(!hidden));
-    if (!hidden) vscode.postMessage({ type: "refreshSessionInfo" });
+    if (!hidden) {
+      vscode.postMessage({ type: "refreshSessionInfo" });
+      if (!accountUsageLoaded) vscode.postMessage({ type: "refreshUsage" });
+    }
   }
   usageButton.addEventListener("click", () => toggleSessionInfo());
   sessionInfo.addEventListener("click", () => toggleSessionInfo(true));
   refreshUsageButton.addEventListener("click", () => {
     vscode.postMessage({ type: "refreshSessionInfo" });
-    if (usagePopover.querySelector('[data-session-panel="account"]')?.classList.contains("active")) {
-      vscode.postMessage({ type: "refreshUsage" });
-    }
+    vscode.postMessage({ type: "refreshUsage" });
   });
   sessionInfoTabs.addEventListener("click", (event) => {
     const tab = event.target.closest?.("[data-session-tab]");
@@ -1857,6 +2052,10 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (!historyPanel.classList.contains("hidden")) {
+        closeHistoryPanel();
+        return;
+      }
       if (!permissionMenu.classList.contains("hidden")) {
         setPermissionMenuOpen(false);
         permissionButton.focus();
