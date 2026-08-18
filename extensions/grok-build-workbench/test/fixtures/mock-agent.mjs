@@ -30,6 +30,7 @@ class MockAgent {
 
   async newSession(request) {
     this.cwd = request.cwd;
+    this.lastSessionMeta = request._meta ?? null;
     return {
       sessionId: SESSION_ID,
       modes: {

@@ -38,8 +38,16 @@ export function hygiene(some: NodeJS.ReadWriteStream | string[] | undefined, run
 		const product = JSON.parse(file.contents!.toString('utf8'));
 
 		if (product.extensionsGallery) {
-			console.error(`product.json: Contains 'extensionsGallery'`);
-			errorCount++;
+			const serviceUrl = String(product.extensionsGallery.serviceUrl ?? '');
+			// Microsoft Marketplace APIs are not licensed for Code - OSS forks.
+			// Open VSX is the supported gallery for Grok Build IDE.
+			if (/marketplace\.visualstudio\.com|vscode\.blob\.core\.windows\.net/i.test(serviceUrl)) {
+				console.error(`product.json: extensionsGallery points at the Microsoft marketplace`);
+				errorCount++;
+			} else if (!/open-vsx\.org/i.test(serviceUrl)) {
+				console.error(`product.json: extensionsGallery must use Open VSX`);
+				errorCount++;
+			}
 		}
 
 		this.emit('data', file);

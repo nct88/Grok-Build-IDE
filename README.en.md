@@ -8,7 +8,7 @@ Grok Build IDE is an optional source-code editor based on **Code - OSS**. It inc
 
 > Grok Build IDE is an independent repository. The primary agent desktop application is available at [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
 
-Current version: **1.0.9** — see [`build/grok/VERSION`](build/grok/VERSION).
+Current version: **1.0.10** — see [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Downloads
 
@@ -16,13 +16,13 @@ The current release is hosted in a private repository and requires a GitHub acco
 
 | Package | Purpose | Download |
 |---|---|---|
-| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.9.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-Setup-1.0.9.exe) |
-| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.9-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.exe) |
-| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.9-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/Grok-Build-IDE-1.0.9-win32-x64-portable.zip) |
-| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.9.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/grok-build-workbench-1.0.9.vsix) |
-| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.9/MANIFEST.json) |
+| Inno Setup | Full Windows installation | [Grok-Build-IDE-Setup-1.0.10.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-Setup-1.0.10.exe) |
+| Portable EXE | Self-extracting portable executable | [Grok-Build-IDE-1.0.10-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-1.0.10-win32-x64-portable.exe) |
+| Portable ZIP | Extract once for long-term portable use | [Grok-Build-IDE-1.0.10-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-1.0.10-win32-x64-portable.zip) |
+| VSIX Update | Update Grok Build Workbench separately | [grok-build-workbench-1.0.10.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/grok-build-workbench-1.0.10.vsix) |
+| Manifest | Artifact sizes and SHA-256 hashes | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/MANIFEST.json) |
 
-Release page: [Grok Build IDE v1.0.9](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.9).
+Release page: [Grok Build IDE v1.0.10](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.10).
 
 The Windows executables are not currently Authenticode-signed. SmartScreen may display a warning on first launch; verify the SHA-256 value in `MANIFEST.json` before running an artifact.
 
@@ -51,12 +51,14 @@ Grok Build IDE (Code - OSS)
 - Explorer, multi-tab editor, search and source-code navigation.
 - Integrated terminal, Source Control, diff editor and debugging surface.
 - Code - OSS commands, settings, keybindings and extension system.
+- **Open VSX** gallery in the Extensions view, with direct `grok-build-ide:extension/publisher.name` links and **Grok Build: Install Extension from Link…** (accepts an id, an Open VSX URL, or a Visual Studio Marketplace `itemName` link).
 - Product identity, icons, installer and data directories separate from VS Code.
 
 ### Grok Build Workbench
 
 - Chat with Grok CLI over ACP directly from the sidebar.
-- Render Markdown, thinking, tool activity, turn state and errors.
+- Render Markdown, thinking, recap/last-turn, tool activity, turn state and errors. Resuming a session restores display-safe `summary_text` and never leaks encrypted payloads.
+- TUI-style `/` menu in the composer (recap, rewind, imagine, effort, local skills).
 - Select the permission mode, model, reasoning effort and session mode.
 - Create sessions, browse the session list, load or resume sessions and rename them.
 - Follow files opened or edited by the agent and open a diff when a file changes.
@@ -103,7 +105,7 @@ The extension locates the CLI through `grokBuild.executablePath`, `PATH` and com
 
 ### Option 1: Inno Setup
 
-1. Download `Grok-Build-IDE-Setup-1.0.9.exe`.
+1. Download `Grok-Build-IDE-Setup-1.0.10.exe`.
 2. Compare its checksum with `MANIFEST.json`.
 3. Run the installer.
 4. Open **Grok Build IDE** from the Start Menu.

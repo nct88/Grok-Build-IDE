@@ -62,6 +62,7 @@ describe("GrokClient ACP integration", () => {
         arguments: [fixture],
         cwd,
         requestTimeoutMs: 5_000,
+        reasoningEffort: "high",
       },
       host,
     );
@@ -86,6 +87,7 @@ describe("GrokClient ACP integration", () => {
       agentVersion: "0.0.0-test",
     });
     expect(events).toContainEqual({ type: "session", sessionId: "mock-session" });
+    // Mock agent stores `_meta`; Grok CLI 1.0.5 reads reasoning effort here.
     expect(events).toContainEqual({
       type: "usage",
       used: 1200,

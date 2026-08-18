@@ -97,9 +97,13 @@ export type GrokEvent =
       type: "session_transcript";
       sessionId: string;
       messages: Array<{
-        role: "user" | "assistant" | "system" | "other";
+        role: "user" | "assistant" | "thought" | "system" | "other";
         text: string;
+        messageId?: string;
+        status?: string;
       }>;
+      lastTurnSummary?: string;
+      lastRecap?: string;
     }
   | { type: "clear_conversation"; reason: "new_session" | "manual" | "resume" }
   | {
@@ -228,5 +232,6 @@ export interface GrokClientOptions {
   clientVersion?: string;
   agentVersionHint?: string;
   resumeSessionId?: string;
+  reasoningEffort?: string;
   mcpServers?: acp.McpServer[];
 }

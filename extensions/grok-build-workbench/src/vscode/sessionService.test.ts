@@ -121,6 +121,8 @@ describe("listLocalSessions", () => {
         updated_at: "2026-08-02T00:00:00Z",
         num_chat_messages: 4,
         current_model_id: "grok-4.5",
+        last_turn_summary: "Updated the login form validation.",
+        last_recap: "We fixed login validation and still need the remember-me checkbox.",
       }),
     );
 
@@ -133,6 +135,8 @@ describe("listLocalSessions", () => {
         model: "grok-4.5",
         updatedAt: "2026-08-02T00:00:00Z",
         messageCount: 4,
+        lastTurnSummary: "Updated the login form validation.",
+        lastRecap: "We fixed login validation and still need the remember-me checkbox.",
       },
     ]);
   });
@@ -239,6 +243,13 @@ describe("readSessionTranscript", () => {
           type: "assistant",
           content: [{ type: "text", text: "Previous **assistant** response" }],
         }),
+        JSON.stringify({
+          type: "reasoning",
+          id: "persisted-reasoning-1",
+          status: "completed",
+          summary: [{ type: "summary_text", text: "Checked the previous files first." }],
+          encrypted_content: "MUST-NOT-RENDER",
+        }),
         "not-json",
       ].join("\n"),
     );
@@ -248,7 +259,39 @@ describe("readSessionTranscript", () => {
     ).resolves.toEqual([
       { role: "user", text: "Show this previous request" },
       { role: "assistant", text: "Previous **assistant** response" },
+      {
+        role: "thought",
+        text: "Checked the previous files first.",
+        messageId: "persisted-reasoning-1",
+        status: "completed",
+      },
     ]);
+  });
+
+  it("does not leak encrypted reasoning payloads", async () => {
+    const home = await mkdtemp(join(tmpdir(), "grok-sessions-"));
+    const sessionDir = join(
+      home,
+      "sessions",
+      encodeURIComponent("H:\\proj"),
+      "secret-reasoning-id",
+    );
+    await mkdir(sessionDir, { recursive: true });
+    await writeFile(
+      join(sessionDir, "summary.json"),
+      JSON.stringify({ info: { id: "secret-reasoning-id", cwd: "H:\\proj" } }),
+    );
+    await writeFile(
+      join(sessionDir, "chat_history.jsonl"),
+      JSON.stringify({
+        type: "reasoning",
+        summary: [],
+        encrypted_content: "MUST-NOT-RENDER",
+      }),
+    );
+    await expect(
+      readSessionTranscript({ grokHome: home, sessionId: "secret-reasoning-id" }),
+    ).resolves.toEqual([]);
   });
 });
 

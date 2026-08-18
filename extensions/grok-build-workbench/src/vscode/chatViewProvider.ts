@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import type { GrokEvent, PermissionMode, PromptAttachment } from "../acp/types.js";
@@ -11,6 +12,8 @@ import { PRODUCTS } from "./layoutModeService.js";
 import { fetchAccountUsage } from "./usageService.js";
 import { normalizeSafeExternalUrl } from "./externalUrlPolicy.js";
 import { readSessionInfo, setSessionGeneratedTitle } from "./sessionService.js";
+import { parseExtensionReference } from "./extensionLink.js";
+import { loadLocalSlashCommands } from "./slashCatalog.js";
 import { listWorktrees, removeWorktree } from "./worktreeService.js";
 
 interface WebviewMessage {
@@ -57,7 +60,9 @@ interface WebviewMessage {
     | "refreshUsage"
     | "refreshSessionInfo"
     | "copyText"
-    | "memoryClear";
+    | "memoryClear"
+    | "slashCatalog"
+    | "installExtension";
   text?: string;
   requestId?: string;
   optionId?: string;
@@ -158,6 +163,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           for (const event of this.controller.initialEvents) {
             this.postEvent(event);
           }
+          await this.refreshSlashCatalog();
           await this.refreshSessionInfo();
           if (
             vscode.workspace.getConfiguration("grokBuild").get<boolean>("autoStart", true) &&
@@ -323,6 +329,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case "memoryClear":
           if (await this.confirmMemoryClear()) {
             await this.runAndNotify(() => clearMemory(this.cliContext()), "Memory");
+          }
+          break;
+        case "slashCatalog":
+          await this.refreshSlashCatalog();
+          break;
+        case "installExtension":
+          if (typeof message.value === "string" && message.value) {
+            await installExtensionFromReference(message.value);
           }
           break;
       }
@@ -848,6 +862,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
+  private async refreshSlashCatalog(): Promise<void> {
+    try {
+      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      const commands = await loadLocalSlashCommands({
+        executable: this.controller.getExecutable(),
+        ...(cwd ? { workspaceRoot: cwd } : {}),
+        grokHome: process.env.GROK_HOME || path.join(os.homedir(), ".grok"),
+      });
+      await this.view?.webview.postMessage({ type: "slash_catalog", commands });
+    } catch {
+      await this.view?.webview.postMessage({ type: "slash_catalog", commands: [] });
+    }
+  }
+
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
     const initialProduct = this.layoutMode?.currentProduct ?? "grok-build-ide";
@@ -858,6 +886,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     );
     const markdownScriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, "media", "markdown.js"),
+    );
+    const slashScriptUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, "media", "slashCommands.js"),
     );
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "main.js"));
     const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "styles.css"));
@@ -1086,16 +1117,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           <button id="send" class="send-button" type="button" aria-label="Send message" title="Send message (queues while Grok is working)"><span data-icon="arrowUp"></span></button>
         </div>
       </div>
-      <span class="hint">Enter send · Shift+Enter newline · While working: type &amp; send queues next turn · Stop cancels current · @ / paste / drop context</span>
+      <span class="hint">Enter send · Shift+Enter newline · / commands · While working: type &amp; send queues next turn · Stop cancels current · @ / paste / drop context</span>
     </footer>
   </main>
   </div>
   <script nonce="${nonce}" src="${timelineScriptUri}"></script>
   <script nonce="${nonce}" src="${markdownScriptUri}"></script>
+  <script nonce="${nonce}" src="${slashScriptUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
   }
+}
+
+async function installExtensionFromReference(raw: string): Promise<void> {
+  const extensionId = parseExtensionReference(raw);
+  if (!extensionId) {
+    throw new Error("Use an extension id or a Marketplace / Open VSX link.");
+  }
+  await vscode.commands.executeCommand("workbench.extensions.installExtension", extensionId);
+  void vscode.window.showInformationMessage(`Installing ${extensionId} from the extension gallery.`);
 }
 
 function getNonce(): string {

@@ -94,7 +94,7 @@ try {
         ),
         avatars: document.querySelectorAll(".message-avatar").length,
         thinking: [...document.querySelectorAll(".thought-summary")].some((el) =>
-          (el.textContent || "").includes("Thinking"),
+          /Thinking|Thought for/.test(el.textContent || ""),
         ),
         reasoningLegacy: [...document.querySelectorAll(".thought")].some((el) =>
           (el.textContent || "").includes("Reasoning activity"),

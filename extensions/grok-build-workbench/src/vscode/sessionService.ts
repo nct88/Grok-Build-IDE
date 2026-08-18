@@ -13,11 +13,16 @@ export interface GrokSessionSummary {
   updatedAt: string;
   messageCount: number;
   reasoningEffort?: string;
+  lastTurnSummary?: string;
+  lastRecap?: string;
+  titleIsManual?: boolean;
 }
 
 export interface TranscriptMessage {
-  role: "user" | "assistant" | "system" | "other";
+  role: "user" | "assistant" | "thought" | "system" | "other";
   text: string;
+  messageId?: string;
+  status?: string;
 }
 
 export interface GrokSessionInfoSnapshot {
@@ -32,6 +37,8 @@ export interface GrokSessionInfoSnapshot {
   sandbox: string | null;
   turns: number | null;
   reasoningEffort: string | null;
+  lastTurnSummary: string | null;
+  lastRecap: string | null;
   agentName: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -61,6 +68,10 @@ interface SummaryJson {
   num_messages?: number;
   current_model_id?: string;
   reasoning_effort?: string;
+  last_turn_summary?: string;
+  last_recap?: string;
+  title_is_manual?: boolean;
+  session_title?: string;
   sandbox_profile?: string;
   agent_name?: string;
 }
@@ -78,11 +89,19 @@ interface SessionUsageJson {
   numTurns?: number;
 }
 
+interface ReasoningSummaryPart {
+  type?: string;
+  text?: string;
+}
+
 interface ChatHistoryLine {
   type?: string;
   role?: string;
   synthetic_reason?: string;
+  id?: string;
+  status?: string;
   content?: string | Array<{ type?: string; text?: string }>;
+  summary?: ReasoningSummaryPart[] | null;
 }
 
 const TITLE_MAX_LEN = 72;
@@ -111,12 +130,12 @@ function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function truncateTitle(value: string): string {
+function truncateTitle(value: string, max = TITLE_MAX_LEN): string {
   const text = collapseWhitespace(value);
-  if (text.length <= TITLE_MAX_LEN) {
+  if (text.length <= max) {
     return text;
   }
-  return `${text.slice(0, TITLE_MAX_LEN - 1).trimEnd()}…`;
+  return `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
 function extractTextFromContent(content: ChatHistoryLine["content"]): string {
@@ -130,6 +149,23 @@ function extractTextFromContent(content: ChatHistoryLine["content"]): string {
     .map((part) => (typeof part?.text === "string" ? part.text : ""))
     .filter(Boolean)
     .join("\n");
+}
+
+/**
+ * Grok CLI persists display-safe reasoning summaries separately from the
+ * encrypted internal payload. Only summary_text is allowed into the webview.
+ */
+export function extractReasoningSummary(
+  summary: ReasoningSummaryPart[] | null | undefined,
+): string {
+  if (!Array.isArray(summary)) {
+    return "";
+  }
+  return summary
+    .filter((part) => part?.type === "summary_text" && typeof part.text === "string")
+    .map((part) => part.text!.trim())
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 /** Prefer the first real user prompt (user_query or plain text), skip system scaffolding. */
@@ -280,6 +316,11 @@ export async function listLocalSessions(options: {
             new Date(0).toISOString(),
           messageCount: hasUserContent ? rawCount : 0,
           ...(summary.reasoning_effort ? { reasoningEffort: summary.reasoning_effort } : {}),
+          ...(summary.last_turn_summary
+            ? { lastTurnSummary: truncateTitle(summary.last_turn_summary, 140) }
+            : {}),
+          ...(summary.last_recap ? { lastRecap: truncateTitle(summary.last_recap, 400) } : {}),
+          ...(summary.title_is_manual ? { titleIsManual: true } : {}),
         });
       } catch {
         // Ignore unreadable session folders.
@@ -292,8 +333,8 @@ export async function listLocalSessions(options: {
 }
 
 /**
- * Load user/assistant turns from chat_history.jsonl for UI replay.
- * Matches the Grok Build desktop transcript shown when a session is resumed.
+ * Load user/assistant/thought turns from chat_history.jsonl for UI replay.
+ * Matches Grok Build Desktop: reasoning uses display-safe summary_text only.
  */
 export async function readSessionTranscript(options: {
   sessionId: string;
@@ -310,7 +351,7 @@ export async function readSessionTranscript(options: {
 
   const historyPath = join(sessionDir, "chat_history.jsonl");
   const out: TranscriptMessage[] = [];
-  const limit = options.limit ?? 200;
+  const limit = Math.max(1, options.limit ?? 200);
   try {
     const stream = createReadStream(historyPath, { encoding: "utf8" });
     const rl = createInterface({ input: stream, crlfDelay: Infinity });
@@ -327,7 +368,23 @@ export async function readSessionTranscript(options: {
           continue;
         }
         const type = (row.type || row.role || "").toLowerCase();
-        if (type === "system" || type === "reasoning") {
+        if (type === "system") {
+          continue;
+        }
+        if (type === "reasoning") {
+          let text = extractReasoningSummary(row.summary).trim();
+          if (!text) {
+            continue;
+          }
+          if (text.length > 50_000) {
+            text = `${text.slice(0, 50_000)}\n…`;
+          }
+          out.push({
+            role: "thought",
+            text,
+            ...(row.id ? { messageId: row.id } : {}),
+            ...(row.status ? { status: row.status } : {}),
+          });
           continue;
         }
         if (row.synthetic_reason && row.synthetic_reason !== "user") {
@@ -361,9 +418,6 @@ export async function readSessionTranscript(options: {
           text = `${text.slice(0, 50_000)}\n…`;
         }
         out.push({ role, text });
-        if (out.length >= limit) {
-          break;
-        }
       }
     } finally {
       rl.close();
@@ -372,7 +426,38 @@ export async function readSessionTranscript(options: {
   } catch {
     return [];
   }
-  return out;
+  if (out.length <= limit) {
+    return out;
+  }
+  let start = out.length - limit;
+  while (start > 0 && out[start]?.role !== "user") {
+    start -= 1;
+  }
+  return out.slice(start);
+}
+
+export async function readSessionFlowMeta(options: {
+  sessionId: string;
+  grokHome?: string;
+}): Promise<{ lastTurnSummary?: string; lastRecap?: string }> {
+  const sessionDir = await findSessionDirectory({
+    sessionId: options.sessionId,
+    ...(options.grokHome ? { grokHome: options.grokHome } : {}),
+  });
+  if (!sessionDir) {
+    return {};
+  }
+  try {
+    const summary = JSON.parse(await readFile(join(sessionDir, "summary.json"), "utf8")) as SummaryJson;
+    return {
+      ...(summary.last_turn_summary
+        ? { lastTurnSummary: truncateTitle(summary.last_turn_summary, 140) }
+        : {}),
+      ...(summary.last_recap ? { lastRecap: truncateTitle(summary.last_recap, 400) } : {}),
+    };
+  } catch {
+    return {};
+  }
 }
 
 async function readLatestSessionUsage(sessionDir: string): Promise<SessionUsageJson | null> {
@@ -490,6 +575,8 @@ export async function readSessionInfo(options: {
     sandbox: asString(summary.sandbox_profile),
     turns: asNumber(usage?.numTurns),
     reasoningEffort: asString(summary.reasoning_effort),
+    lastTurnSummary: asString(summary.last_turn_summary),
+    lastRecap: asString(summary.last_recap),
     agentName: asString(summary.agent_name) ?? "Grok Build",
     createdAt: asString(summary.created_at),
     updatedAt: asString(summary.updated_at),

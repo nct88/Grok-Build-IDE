@@ -872,6 +872,87 @@ h2 {
   color: var(--vscode-descriptionForeground);
 }
 
+.recap {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--vscode-descriptionForeground);
+  border-radius: 0 8px 8px 0;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.recap-summary {
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  font-weight: 600;
+  list-style: none;
+}
+
+.recap-summary::-webkit-details-marker {
+  display: none;
+}
+
+.recap-body {
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+.session-flow-strip {
+  margin: 0 12px 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editorWidget-background);
+  font-size: 11px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slash-menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 8;
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--vscode-widget-border, transparent);
+  border-radius: 8px;
+  background: var(--vscode-editorWidget-background);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.slash-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.slash-item.active,
+.slash-item:hover {
+  background: var(--vscode-list-activeSelectionBackground, var(--vscode-toolbar-hoverBackground));
+  color: var(--vscode-list-activeSelectionForeground, inherit);
+}
+
+.slash-item span {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
 .tool {
   border-left-width: 3px;
 }
@@ -999,6 +1080,7 @@ h2 {
 }
 
 .composer-card {
+  position: relative;
   padding: 8px 10px;
   border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
   border-radius: 12px;

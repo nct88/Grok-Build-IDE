@@ -3,7 +3,7 @@
   "displayName": "Grok Build IDE",
   "icon": "logo/grok-fluffy.png",
   "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "publisher": "local-grok-workbench",
   "license": "MIT",
   "repository": {
@@ -55,6 +55,7 @@
     "onCommand:grokBuild.plugins",
     "onCommand:grokBuild.login",
     "onCommand:grokBuild.doctor",
+    "onCommand:grokBuild.installExtension",
     "onStartupFinished"
   ],
   "capabilities": {
@@ -120,6 +121,12 @@
         "title": "Clear Conversation",
         "category": "Grok Build",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "grokBuild.installExtension",
+        "title": "Install Extension from Link…",
+        "category": "Grok Build",
+        "icon": "$(extensions)"
       },
       {
         "command": "grokBuild.sessions",
@@ -619,7 +626,7 @@
     "test:visual": "node test/visual/verify-webview.mjs",
     "check": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production && node ../../scripts/check-grok-release-contract.mjs && node test/visual/verify-webview.mjs",
     "vscode:prepublish": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production",
-    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.9.vsix"
+    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.10.vsix"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.3.0",

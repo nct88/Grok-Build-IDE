@@ -2,6 +2,12 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.10 — 2026-08-18
+
+- Resume sessions with display-safe reasoning summaries, last-turn recap, and CLI 1.0.5 `_meta.reasoningEffort` on `session/new` and `session/load`.
+- Add TUI slash commands, local Grok skills, preparing-tool labels, and Codex-style thought titles in the Agent sidebar.
+- Enable the Open VSX gallery with direct `grok-build-ide:extension/publisher.name` links and **Install Extension from Link…**.
+
 ## 1.0.9 — 2026-08-13
 
 - Enforced Workspace Trust and made reverse-terminal ACP opt-in with explicit security boundaries.

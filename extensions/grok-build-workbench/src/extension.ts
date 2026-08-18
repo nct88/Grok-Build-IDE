@@ -10,6 +10,7 @@ import {
 } from "./vscode/sessionTreeProvider.js";
 import { GrokInlineCompletionProvider } from "./vscode/inlineCompletionProvider.js";
 import { LayoutModeService } from "./vscode/layoutModeService.js";
+import { parseExtensionReference } from "./vscode/extensionLink.js";
 import { setSessionGeneratedTitle } from "./vscode/sessionService.js";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -113,6 +114,31 @@ export function activate(context: vscode.ExtensionContext): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         void vscode.window.showErrorMessage(`Could not delete conversation: ${message}`);
+      }
+    }),
+    vscode.commands.registerCommand("grokBuild.installExtension", async (raw?: string) => {
+      const value = typeof raw === "string" && raw.trim()
+        ? raw.trim()
+        : await vscode.window.showInputBox({
+          title: "Install Extension",
+          prompt: "Extension id, Open VSX URL, Visual Studio Marketplace itemName link, or grok-build-ide:extension/publisher.name",
+          placeHolder: "ms-python.python",
+          ignoreFocusOut: true,
+        });
+      if (!value) {
+        return;
+      }
+      const extensionId = parseExtensionReference(value);
+      if (!extensionId) {
+        void vscode.window.showErrorMessage("Use an extension id or a Marketplace / Open VSX link.");
+        return;
+      }
+      try {
+        await vscode.commands.executeCommand("workbench.extensions.installExtension", extensionId);
+        void vscode.window.showInformationMessage(`Installing ${extensionId} from the extension gallery.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(`Could not install ${extensionId}: ${message}`);
       }
     }),
     vscode.commands.registerCommand("grokBuild.connect", () => controller.connect()),

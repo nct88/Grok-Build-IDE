@@ -26,6 +26,7 @@ import {
   deleteSessionViaCli,
   exportSessionMarkdown,
   listLocalSessions,
+  readSessionFlowMeta,
   readSessionTranscript,
   type GrokSessionSummary,
 } from "./sessionService.js";
@@ -222,6 +223,7 @@ export class GrokController implements vscode.Disposable {
         clientVersion: this.clientVersion,
         ...(cliProbe.version ? { agentVersionHint: cliProbe.version } : {}),
         ...(this.resumeSessionId ? { resumeSessionId: this.resumeSessionId } : {}),
+        reasoningEffort,
         mcpServers: [],
       },
       this.createHost(),
@@ -282,14 +284,17 @@ export class GrokController implements vscode.Disposable {
   }
 
   private async publishSessionTranscript(sessionId: string): Promise<void> {
-    const messages = await readSessionTranscript({
-      sessionId,
-      grokHome: process.env.GROK_HOME || path.join(os.homedir(), ".grok"),
-    });
+    const grokHome = process.env.GROK_HOME || path.join(os.homedir(), ".grok");
+    const [messages, flow] = await Promise.all([
+      readSessionTranscript({ sessionId, grokHome }),
+      readSessionFlowMeta({ sessionId, grokHome }),
+    ]);
     const event: Extract<GrokEvent, { type: "session_transcript" }> = {
       type: "session_transcript",
       sessionId,
       messages,
+      ...(flow.lastTurnSummary ? { lastTurnSummary: flow.lastTurnSummary } : {}),
+      ...(flow.lastRecap ? { lastRecap: flow.lastRecap } : {}),
     };
     this.sessionTranscriptEvent = event;
     this.broadcast(event);
@@ -399,6 +404,7 @@ export class GrokController implements vscode.Disposable {
     await vscode.workspace
       .getConfiguration("grokBuild")
       .update("reasoningEffort", effort, vscode.ConfigurationTarget.Workspace);
+    this.client?.setReasoningEffort(effort);
     this.refreshContext();
     if (reconnect) {
       await this.disconnect();

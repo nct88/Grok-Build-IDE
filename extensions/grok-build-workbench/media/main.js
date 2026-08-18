@@ -2,6 +2,7 @@
   const vscode = acquireVsCodeApi();
   const timeline = globalThis.GrokConversationTimeline;
   const markdown = globalThis.GrokMarkdown;
+  const slash = globalThis.GrokSlashCommands;
   if (!timeline) throw new Error("Grok conversation timeline helper is unavailable");
   if (!markdown) throw new Error("Grok markdown helper is unavailable");
 
@@ -570,7 +571,7 @@
     }
     const query = historySearch.value.trim().toLocaleLowerCase();
     const filtered = historySessions.filter((session) => {
-      const haystack = [session.title, session.id, session.model, session.reasoningEffort, session.cwd]
+      const haystack = [session.title, session.id, session.model, session.reasoningEffort, session.lastTurnSummary, session.lastRecap, session.cwd]
         .filter(Boolean)
         .join(" ")
         .toLocaleLowerCase();
@@ -616,6 +617,7 @@
         active ? "Active" : historyTime(session.updatedAt),
         session.model,
         session.messageCount ? `${session.messageCount} messages` : null,
+        session.lastTurnSummary,
         workspace,
       ].filter(Boolean).join(" · ");
       open.append(title, meta);
@@ -855,18 +857,64 @@
     return message.body;
   }
 
-  function renderSessionTranscript(messagesToRender) {
+  function thoughtPreview(text) {
+    const preview = String(text || "")
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/[*_`#>\[\]]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!preview) return "Thinking";
+    return preview.length > 96 ? `${preview.slice(0, 95).trimEnd()}…` : preview;
+  }
+
+  function paintSessionFlow(lastTurn, lastRecap) {
+    let el = document.getElementById("sessionFlowStrip");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "sessionFlowStrip";
+      el.className = "session-flow-strip hidden";
+      document.querySelector(".runtime-row")?.after(el);
+    }
+    const effort = offlineEffort && offlineEffort !== "Default effort" ? offlineEffort : "";
+    const parts = [effort, lastTurn || lastRecap].filter(Boolean);
+    const text = parts.join(" · ");
+    el.textContent = text;
+    el.title = lastRecap || lastTurn || text;
+    el.classList.toggle("hidden", !text);
+  }
+
+  function renderRecap(lastRecap, lastTurn) {
+    if (!lastRecap && !lastTurn) return;
+    const recap = document.createElement("details");
+    recap.className = "recap";
+    recap.open = false;
+    const summary = document.createElement("summary");
+    summary.className = "recap-summary";
+    summary.textContent = lastTurn || "Session recap";
+    const body = document.createElement("div");
+    body.className = "recap-body";
+    body.textContent = lastRecap || lastTurn || "";
+    recap.append(summary, body);
+    messages.appendChild(recap);
+  }
+
+  function renderSessionTranscript(payload) {
     tools.clear();
     permissionCards.clear();
     resetTurnPointers();
     planDock.classList.add("hidden");
     planDock.replaceChildren();
     messages.replaceChildren();
-    const transcript = Array.isArray(messagesToRender) ? messagesToRender : [];
+    const transcript = Array.isArray(payload?.messages) ? payload.messages : Array.isArray(payload) ? payload : [];
+    renderRecap(payload?.lastRecap, payload?.lastTurnSummary);
+    paintSessionFlow(payload?.lastTurnSummary, payload?.lastRecap);
     for (const message of transcript) {
-      if ((message.role !== "user" && message.role !== "assistant") || !message.text) {
+      if (!message.text) continue;
+      if (message.role === "thought") {
+        appendThought(message.text, message.messageId, { persisted: true });
         continue;
       }
+      if (message.role !== "user" && message.role !== "assistant") continue;
       addMessage(message.role, message.text);
     }
     if (!messages.children.length) {
@@ -972,8 +1020,9 @@
     if (shouldStick) scrollToBottom();
   }
 
-  function appendThought(text, messageId) {
+  function appendThought(text, messageId, options) {
     if (!showReasoning) return;
+    const persisted = Boolean(options?.persisted);
     ensureConversation();
     updateConversation(() => {
       if (timeline.shouldStartNewSegment(
@@ -984,13 +1033,17 @@
       )) {
         const thought = document.createElement("details");
         thought.className = "thought";
+        thought.open = !persisted;
+        if (persisted) thought.dataset.persisted = "true";
+        else thought.dataset.startedAt = String(Date.now());
         const summary = document.createElement("summary");
         summary.className = "thought-summary";
         const glyph = document.createElement("span");
         glyph.className = "thought-glyph";
         glyph.appendChild(createIcon("brain"));
         const summaryLabel = document.createElement("span");
-        summaryLabel.textContent = "Thinking";
+        summaryLabel.className = "thought-label";
+        summaryLabel.textContent = persisted ? thoughtPreview(text) : "Thinking";
         summary.append(glyph, summaryLabel);
         const body = document.createElement("div");
         body.className = "thought-body";
@@ -1001,6 +1054,50 @@
       }
       lastThought.textContent += text;
     });
+  }
+
+  function finishThoughts() {
+    for (const thought of messages.querySelectorAll("details.thought")) {
+      const label = thought.querySelector(".thought-label");
+      const body = thought.querySelector(".thought-body");
+      if (thought.dataset.persisted === "true") {
+        if (label) label.textContent = thoughtPreview(body?.textContent || "");
+        thought.open = false;
+        continue;
+      }
+      const started = Number(thought.dataset.startedAt || 0);
+      if (started && label) {
+        const seconds = Math.max(0.1, (Date.now() - started) / 1000);
+        const duration = seconds < 10 ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
+        label.textContent = `Thought for ${duration}`;
+      }
+      thought.open = false;
+    }
+  }
+
+  function preparingToolLabel(title) {
+    const raw = String(title || "").trim();
+    if (!raw) return "Writing file…";
+    if (/^(?:mcp__|user-)/i.test(raw) && !/\s/.test(raw)) {
+      const short = raw.replace(/^(?:mcp__|user-)/i, "").replace(/[_-]+/g, " ");
+      return `Preparing ${short || raw}…`;
+    }
+    if (/^edit\b|search_replace|str_replace/i.test(raw)) return "Writing edit…";
+    if (/^write\b|^create\b/i.test(raw)) return "Writing file…";
+    if (/^read\b|^read_file\b/i.test(raw)) return "Reading file…";
+    if (/grep|search|glob|web_search|web_fetch/i.test(raw)) return "Searching…";
+    if (/list_dir|listdir|list directory/i.test(raw)) return "Listing directory…";
+    if (/bash|shell|terminal|run_terminal/i.test(raw)) return "Running command…";
+    return "";
+  }
+
+  function displayToolTitle(title, status) {
+    const running = /pending|in_progress|running|queued/i.test(String(status || ""));
+    if (running) {
+      const prepared = preparingToolLabel(title);
+      if (prepared) return prepared;
+    }
+    return title || "Tool call";
   }
 
   function locationButton(location) {
@@ -1064,7 +1161,7 @@
     glyph.appendChild(createIcon(toolIcon(event.kind)));
     const title = document.createElement("span");
     title.className = "tool-title";
-    title.textContent = event.title || "Tool call";
+    title.textContent = displayToolTitle(event.title, event.status);
     const toolStatus = document.createElement("span");
     toolStatus.className = "tool-status";
     applyToolStatus(item, toolStatus, event.status || "pending");
@@ -1100,7 +1197,9 @@
       return;
     }
     updateConversation(() => {
-      if (event.title) tool.title.textContent = event.title;
+      if (event.title || event.status) {
+        tool.title.textContent = displayToolTitle(event.title || tool.title.textContent, event.status || tool.item.dataset.status);
+      }
       if (event.kind) tool.item.dataset.kind = event.kind;
       if (event.status) applyToolStatus(tool.item, tool.status, event.status);
       if (event.locations) updateLocations(tool.locations, event.locations);
@@ -1431,6 +1530,8 @@
       ["Sandbox", data.sandbox],
       ["Turns", data.turns],
       ["Reasoning effort", data.reasoningEffort],
+      ["Last turn", data.lastTurnSummary],
+      ["Recap", data.lastRecap],
       ["Permission mode", data.permissionMode],
       ["ACP protocol", data.acpProtocol],
       ["Created", dateLabel(data.createdAt)],
@@ -1765,8 +1866,130 @@
     }
   }
 
+  let slashMenu;
+  let slashHighlight = 0;
+
+  function hideSlashMenu() {
+    slashMenu?.classList.add("hidden");
+    slashHighlight = 0;
+  }
+
+  function handleSlashUi(action, arg) {
+    const value = String(arg || "").trim();
+    switch (action) {
+      case "new":
+        vscode.postMessage({ type: "newSession" });
+        return;
+      case "session-info":
+      case "context":
+      case "usage":
+        usageButton.click();
+        return;
+      case "copy": {
+        const last = [...messages.querySelectorAll(".message.assistant .message-body")].at(-1);
+        if (last?.dataset.raw || last?.textContent) {
+          vscode.postMessage({ type: "copyText", value: last.dataset.raw || last.textContent });
+        }
+        return;
+      }
+      case "export":
+        vscode.postMessage({ type: "exportSession" });
+        return;
+      case "rename":
+        if (currentSessionId) vscode.postMessage({ type: "renameSession", sessionId: currentSessionId });
+        return;
+      case "delete":
+        if (currentSessionId) vscode.postMessage({ type: "deleteSession", sessionId: currentSessionId });
+        return;
+      case "model":
+        if (value) vscode.postMessage({ type: "setModel", value });
+        else modelButton.click();
+        return;
+      case "effort":
+        if (value) vscode.postMessage({ type: "setEffort", value });
+        else effortButton.click();
+        return;
+      case "plan":
+        vscode.postMessage({ type: "setSessionMode", modeId: "plan" });
+        return;
+      case "always-approve":
+        vscode.postMessage({ type: "setPermissionMode", mode: "full" });
+        return;
+      case "auto":
+        vscode.postMessage({ type: "setPermissionMode", mode: "auto" });
+        return;
+      case "settings":
+        vscode.postMessage({ type: "settings" });
+        return;
+      case "plugins":
+        vscode.postMessage({ type: "plugins" });
+        return;
+      case "skills":
+      case "mcps":
+        vscode.postMessage({ type: action === "mcps" ? "mcp" : "toolsHub" });
+        return;
+      case "login":
+        vscode.postMessage({ type: "login" });
+        return;
+      case "logout":
+        vscode.postMessage({ type: "logout" });
+        return;
+      case "docs":
+        vscode.postMessage({ type: "openExternal", value: "https://github.com/nct88/Grok-Build-IDE#readme" });
+        return;
+      case "doctor":
+        vscode.postMessage({ type: "doctor" });
+        return;
+      default:
+        return;
+    }
+  }
+
+  function ensureSlashMenu() {
+    if (slashMenu) return slashMenu;
+    slashMenu = document.createElement("div");
+    slashMenu.id = "slashMenu";
+    slashMenu.className = "slash-menu hidden";
+    slashMenu.setAttribute("role", "listbox");
+    slashMenu.setAttribute("aria-label", "Slash commands");
+    composerCard.appendChild(slashMenu);
+    return slashMenu;
+  }
+
+  function renderSlashMenu() {
+    if (!slash) return hideSlashMenu();
+    const menu = slash.menuForInput(prompt.value, prompt.selectionStart ?? prompt.value.length);
+    if (!menu) {
+      hideSlashMenu();
+      return;
+    }
+    const root = ensureSlashMenu();
+    root.replaceChildren();
+    slashHighlight = Math.min(slashHighlight, menu.items.length - 1);
+    menu.items.forEach((item, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `slash-item${index === slashHighlight ? " active" : ""}`;
+      button.setAttribute("role", "option");
+      const label = document.createElement("strong");
+      label.textContent = item.label;
+      const hint = document.createElement("span");
+      hint.textContent = item.hint || "";
+      button.append(label, hint);
+      button.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        prompt.value = item.insert;
+        hideSlashMenu();
+        prompt.focus();
+        resizePrompt();
+      });
+      root.append(button);
+    });
+    root.classList.remove("hidden");
+  }
+
   function submit() {
-    const text = prompt.value.trim();
+    let text = prompt.value.trim();
     const attachments = Array.from(attachedFiles.values(), ({ uri, name, mimeType, data }) => ({
       uri,
       name,
@@ -1775,6 +1998,20 @@
     }));
     if (!text && attachments.length === 0) return;
     if (state !== "connected" && state !== "running") return;
+
+    hideSlashMenu();
+    if (text.startsWith("/") && slash) {
+      const resolved = slash.resolveSlash(text);
+      if (resolved.kind === "ui") {
+        handleSlashUi(resolved.action, resolved.arg);
+        prompt.value = "";
+        resizePrompt();
+        return;
+      }
+      if (resolved.kind === "prompt") {
+        text = resolved.text;
+      }
+    }
 
     const contextNames = attachments.map((attachment) => attachment.name);
     const body = addMessage(
@@ -1846,6 +2083,14 @@
     }
     if (message.data?.type === "session_info") {
       renderSessionInfo(message.data);
+      if (message.data.state === "ready") {
+        paintSessionFlow(message.data.data?.lastTurnSummary, message.data.data?.lastRecap);
+      }
+      return;
+    }
+    if (message.data?.type === "slash_catalog") {
+      slash?.setRuntimeCommands?.(message.data.commands || []);
+      renderSlashMenu();
       return;
     }
     if (message.data?.type === "session_list") {
@@ -1884,7 +2129,7 @@
         tools.clear();
         break;
       case "session_transcript":
-        renderSessionTranscript(event.messages);
+        renderSessionTranscript(event);
         break;
       case "clear_conversation":
         clearPromptQueue(false);
@@ -1911,6 +2156,7 @@
         // Final structured render of the full answer (throttled stream used plain MD).
         if (lastAssistant) scheduleNodeRender(lastAssistant, true);
         else flushPendingRenders(true);
+        finishThoughts();
         resetTurnPointers();
         break;
       case "diagnostic": addActivityNote(event.message); break;
@@ -1950,6 +2196,7 @@
   filesButton.setAttribute("aria-label", "Add context files or images");
   prompt.addEventListener("input", () => {
     handleContextAtMention();
+    renderSlashMenu();
     resizePrompt();
   });
   settingsButton.addEventListener("click", () => vscode.postMessage({ type: "settings" }));
@@ -2056,6 +2303,28 @@
     vscode.postMessage({ type });
   });
   prompt.addEventListener("keydown", (event) => {
+    if (!slashMenu?.classList.contains("hidden")) {
+      const items = [...slashMenu.querySelectorAll(".slash-item")];
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        slashHighlight = (slashHighlight + (event.key === "ArrowDown" ? 1 : items.length - 1)) % Math.max(items.length, 1);
+        renderSlashMenu();
+        return;
+      }
+      if (event.key === "Tab" || (event.key === "Enter" && !event.shiftKey)) {
+        const selected = items[slashHighlight];
+        if (selected) {
+          event.preventDefault();
+          selected.dispatchEvent(new Event("mousedown"));
+          return;
+        }
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        hideSlashMenu();
+        return;
+      }
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       submit();

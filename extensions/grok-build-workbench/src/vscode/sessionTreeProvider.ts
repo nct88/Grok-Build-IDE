@@ -22,6 +22,7 @@ export class SessionTreeItem extends vscode.TreeItem {
     tooltip.appendMarkdown(`$(clock) ${timeStr}  \n`);
     tooltip.appendMarkdown(`$(comment) ${messages}  \n`);
     if (summary.model) tooltip.appendMarkdown(`$(sparkle) ${summary.model}${summary.reasoningEffort ? ` · ${summary.reasoningEffort}` : ""}  \n`);
+    if (summary.lastTurnSummary) tooltip.appendMarkdown(`$(comment-unresolved) ${summary.lastTurnSummary}  \n`);
     tooltip.appendMarkdown(`$(folder) ${summary.cwd}  \n\n`);
     tooltip.appendCodeblock(summary.id);
     this.tooltip = tooltip;
