@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseGrokVersion } from "./executableVersion.js";
 
 describe("parseGrokVersion", () => {
-  it("extracts the Grok Build CLI semantic version", () => {
+  it("extracts the Grok CLI semantic version", () => {
     expect(parseGrokVersion("grok 1.0.3 (1a29d5bc12)\n")).toBe("1.0.3");
   });
 

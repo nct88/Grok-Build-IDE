@@ -246,7 +246,7 @@ export function activate(context: vscode.ExtensionContext): void {
         await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(uri.fsPath)));
         await vscode.workspace.fs.writeFile(
           uri,
-          new TextEncoder().encode("# Grok Build CLI settings\n"),
+          new TextEncoder().encode("# Grok CLI settings\n"),
         );
       }
       await vscode.window.showTextDocument(uri, { preview: false });

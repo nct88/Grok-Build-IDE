@@ -594,7 +594,7 @@ export class GrokController implements vscode.Disposable {
     }
     const version = parseGrokVersion(output);
     return {
-      detail: version ? `Grok Build CLI ${version} · ${executable}` : executable,
+      detail: version ? `Grok CLI ${version} · ${executable}` : executable,
       ...(version ? { version } : {}),
     };
   }
