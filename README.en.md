@@ -6,13 +6,13 @@
 
 Grok Build IDE is an optional source-code editor based on **Code - OSS**. It includes the **Grok Build Workbench** interface and connects to the **official Grok CLI** over ACP (`grok agent stdio`). It is intended for users who want a complete Explorer, editor, terminal, Source Control and debugging environment alongside the agent experience.
 
-> Grok Build IDE is an independent repository. The primary agent desktop application is available at [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
+> Grok Build IDE is an independent repository. The agent desktop application is available at [`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop).
 
 Current version: **1.0.10** — see [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Downloads
 
-The current release is hosted in a private repository and requires a GitHub account with access:
+The release is publicly available on GitHub Releases:
 
 | Package | Purpose | Download |
 |---|---|---|
@@ -26,13 +26,16 @@ Release page: [Grok Build IDE v1.0.10](https://github.com/nct88/Grok-Build-IDE/r
 
 The Windows executables are not currently Authenticode-signed. SmartScreen may display a warning on first launch; verify the SHA-256 value in `MANIFEST.json` before running an artifact.
 
-## How are Grok Build and Grok Build IDE different?
+## How are Grok Build Desktop and Grok Build IDE different?
 
-| Product | Focus | Use it when |
+| Field | Grok Build Desktop | Grok Build IDE (this repo) |
 |---|---|---|
-| **Grok Build** | Agent desktop interface focused on conversation and orchestration | You want a streamlined agent experience without a complete IDE |
-| **Grok Build IDE** | Code - OSS with the integrated Grok Workbench | You want an editor, Explorer, terminal, SCM, debugging and an agent in one window |
-| **Grok CLI** | Agent engine, authentication, sessions and tool loop | Required by both the Desktop and IDE applications |
+| Product name | **Grok Build Desktop** | **Grok Build IDE** |
+| GitHub | [`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop) | [`nct88/Grok-Build-IDE`](https://github.com/nct88/Grok-Build-IDE) |
+| Runtime | Electron, **not** Code-OSS | Code - OSS + Grok Build Workbench |
+| Windows / Start Menu name | Grok Build (`Grok Build.exe`) | Grok Build IDE (`Grok Build IDE.exe`) |
+| Use it when | You want a streamlined agent experience without a complete IDE | You want an editor, Explorer, terminal, SCM, debugging and an agent in one window |
+| Required engine | **Grok CLI** | the same Grok CLI |
 
 Both interfaces share the same runtime boundary:
 
@@ -69,7 +72,7 @@ Grok Build IDE (Code - OSS)
 
 ### Switching between the two products
 
-- **Open Grok Build** opens the agent desktop application.
+- **Open Grok Build** opens **Grok Build Desktop** (`Grok Build.exe`).
 - **Open Grok Build IDE** returns to the IDE interface.
 - The default product surface in the IDE package is `grok-build-ide`.
 - The agent-first IDE layout is optional, and the most recent choice is remembered.
@@ -110,7 +113,7 @@ The extension locates the CLI through `grokBuild.executablePath`, `PATH` and com
 3. Run the installer.
 4. Open **Grok Build IDE** from the Start Menu.
 5. Select **Open Folder** and open a workspace.
-6. Open Grok Build in the sidebar, review the mode and permissions, then connect.
+6. Open **Grok Build Workbench** in the sidebar, review the mode and permissions, then connect.
 
 Default installation path:
 
@@ -334,6 +337,7 @@ Close every IDE window before running `apply-update.ps1`, verify the `InstallRoo
 | Document | Contents |
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code - OSS and Grok extension architecture |
+| [`docs/PRODUCT_IDENTITY.md`](docs/PRODUCT_IDENTITY.md) | IDE and Desktop product names |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Dependency installation, source startup and checks |
 | [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) | Build and release |
 | [`CHANGELOG.md`](CHANGELOG.md) | Versioned changes |

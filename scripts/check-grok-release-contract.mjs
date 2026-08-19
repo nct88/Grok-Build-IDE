@@ -41,6 +41,24 @@ if (version !== extension.version) {
 if (product.nameShort !== 'Grok Build IDE' || extension.displayName !== 'Grok Build IDE') {
 	failures.push('product and extension display name must be Grok Build IDE');
 }
+if (packaging.githubRepo !== 'nct88/Grok-Build-IDE') {
+	failures.push('packaging.json githubRepo must be nct88/Grok-Build-IDE');
+}
+if (packaging.siblingRepo !== 'nct88/Grok-Build-Desktop') {
+	failures.push('packaging.json siblingRepo must be nct88/Grok-Build-Desktop');
+}
+if (!/nct88\/Grok-Build-Desktop/.test(readme + readmeEn)) {
+	failures.push('README must identify the sibling Grok Build Desktop repository');
+}
+if (/github\.com\/nct88\/Grok-Build(?!-Desktop)(?!-IDE)/.test(readme + readmeEn)) {
+	failures.push('README must not use the retired nct88/Grok-Build GitHub path');
+}
+if (/repository private/i.test(readme + readmeEn)) {
+	failures.push('README must not claim the public GitHub repository is private');
+}
+if (/Grok Build CLI/.test(contributing + support + security + privacy)) {
+	failures.push('docs must say Grok CLI, not Grok Build CLI');
+}
 if (product.licenseFileName !== 'LICENSE.txt') {
 	failures.push('product packaging must include the repository LICENSE.txt');
 }

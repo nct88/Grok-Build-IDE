@@ -6,13 +6,13 @@
 
 Grok Build IDE là trình soạn thảo mã nguồn tùy chọn dựa trên **Code - OSS**, tích hợp sẵn giao diện **Grok Build Workbench** và kết nối với **Grok CLI chính thức** qua ACP (`grok agent stdio`). Sản phẩm dành cho người dùng cần đầy đủ Explorer, editor, terminal, Source Control và debug bên cạnh trải nghiệm agent.
 
-> Grok Build IDE là repository độc lập. Ứng dụng agent desktop chính nằm tại [`nct88/Grok-Build`](https://github.com/nct88/Grok-Build).
+> Grok Build IDE là repository độc lập. Ứng dụng agent desktop nằm tại [`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop).
 
 Phiên bản hiện tại: **1.0.10** — xem [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Tải xuống
 
-Release hiện tại nằm trong repository private và yêu cầu tài khoản GitHub có quyền truy cập:
+Release được phát hành công khai tại GitHub Releases:
 
 | Gói | Mục đích | Tải xuống |
 |---|---|---|
@@ -26,13 +26,16 @@ Trang release: [Grok Build IDE v1.0.10](https://github.com/nct88/Grok-Build-IDE/
 
 Các executable Windows hiện chưa được ký Authenticode. SmartScreen có thể cảnh báo trong lần chạy đầu; hãy kiểm tra SHA-256 trong `MANIFEST.json` trước khi chạy.
 
-## Grok Build và Grok Build IDE khác nhau thế nào?
+## Grok Build Desktop và Grok Build IDE khác nhau thế nào?
 
-| Sản phẩm | Mục tiêu | Nên dùng khi |
+| Trường | Grok Build Desktop | Grok Build IDE (repo này) |
 |---|---|---|
-| **Grok Build** | Giao diện agent desktop, tập trung vào hội thoại và điều phối | Bạn muốn trải nghiệm agent gọn, không cần toàn bộ IDE |
-| **Grok Build IDE** | Code - OSS với Grok Workbench tích hợp | Bạn muốn editor, Explorer, terminal, SCM, debug và agent trong cùng cửa sổ |
-| **Grok CLI** | Agent engine, xác thực, session và tool loop | Thành phần bắt buộc cho cả Desktop và IDE |
+| Tên sản phẩm | **Grok Build Desktop** | **Grok Build IDE** |
+| GitHub | [`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop) | [`nct88/Grok-Build-IDE`](https://github.com/nct88/Grok-Build-IDE) |
+| Nền tảng | Electron, **không** dùng Code-OSS | Code - OSS + Grok Build Workbench |
+| Tên Windows / Start Menu | Grok Build (`Grok Build.exe`) | Grok Build IDE (`Grok Build IDE.exe`) |
+| Nên dùng khi | Bạn muốn trải nghiệm agent gọn, không cần toàn bộ IDE | Bạn muốn editor, Explorer, terminal, SCM, debug và agent trong cùng cửa sổ |
+| Engine bắt buộc | **Grok CLI** | cùng Grok CLI |
 
 Hai giao diện dùng chung ranh giới runtime:
 
@@ -69,7 +72,7 @@ Grok Build IDE (Code - OSS)
 
 ### Chuyển đổi giữa hai sản phẩm
 
-- **Open Grok Build** mở ứng dụng agent desktop.
+- **Open Grok Build** mở **Grok Build Desktop** (`Grok Build.exe`).
 - **Open Grok Build IDE** quay lại giao diện IDE.
 - Product surface mặc định của package IDE là `grok-build-ide`.
 - Agent-first layout trong IDE là tùy chọn; lựa chọn gần nhất được ghi nhớ.
@@ -110,7 +113,7 @@ Extension tìm CLI theo cấu hình `grokBuild.executablePath`, `PATH` và vị 
 3. Chạy installer.
 4. Mở **Grok Build IDE** từ Start Menu.
 5. Chọn **Open Folder** và mở workspace.
-6. Mở Grok Build ở sidebar, kiểm tra mode/quyền rồi kết nối.
+6. Mở **Grok Build Workbench** ở sidebar, kiểm tra mode/quyền rồi kết nối.
 
 Đường dẫn cài mặc định:
 
@@ -336,6 +339,7 @@ Executable hiện chưa ký số. Chỉ chạy artifact từ release chính th�
 | Tài liệu | Nội dung |
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Kiến trúc Code - OSS/Grok extension |
+| [`docs/PRODUCT_IDENTITY.md`](docs/PRODUCT_IDENTITY.md) | Tên sản phẩm IDE và Desktop |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Cài dependency, chạy source và kiểm tra |
 | [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) | Build và phát hành |
 | [`CHANGELOG.md`](CHANGELOG.md) | Thay đổi theo phiên bản |

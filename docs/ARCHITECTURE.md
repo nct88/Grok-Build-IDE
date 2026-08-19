@@ -1,7 +1,9 @@
 # Architecture
 
 Grok Build IDE is a branded Code - OSS workbench with the Grok Build Workbench
-extension integrated as the Grok-specific agent surface.
+extension integrated as the Grok-specific agent surface. It is not
+Grok Build Desktop; that Electron product lives in
+[`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop).
 
 ```text
 Code - OSS workbench

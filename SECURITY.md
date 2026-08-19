@@ -1,7 +1,7 @@
 # Security Policy
 
 Grok Build IDE can read and modify project files and, when explicitly enabled,
-run host shell commands through the Grok Build CLI. Treat agent permissions with
+run host shell commands through the official Grok CLI. Treat agent permissions with
 the same care as terminal access.
 
 ## Supported versions
