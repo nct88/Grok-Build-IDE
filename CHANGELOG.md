@@ -2,6 +2,12 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.11 — 2026-08-20
+
+- Added workspace Grok skills (`/verify-ui`, `/use-mcp`, `/write-fix-log`, `/run-check`), always-on `.grok/rules`, and Chrome DevTools MCP.
+- Terminate ACP/CLI/terminal process trees on Windows so grandchild `grok.exe` processes cannot leak across reconnects.
+- Tightened portable Git and file-watcher defaults for large workspaces (`restoreWindows=one`, no parent-folder Git, no submodules, exclude `node_modules`/`dist`/`workspaces/req_*`).
+
 ## 1.0.10 — 2026-08-18
 
 - Resume sessions with display-safe reasoning summaries, last-turn recap, and CLI 1.0.5 `_meta.reasoningEffort` on `session/new` and `session/load`.

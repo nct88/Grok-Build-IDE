@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { terminateProcessTree } from "../processTree.js";
 
 export interface GrokModelCatalog {
   defaultModel?: string;
@@ -40,7 +41,9 @@ export async function discoverGrokModels(options: {
       shell: false,
     });
     let stdout = "";
-    const timer = setTimeout(() => child.kill(), options.timeoutMs ?? 10_000);
+    const timer = setTimeout(() => {
+      void terminateProcessTree(child, true);
+    }, options.timeoutMs ?? 10_000);
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => {
       stdout = `${stdout}${chunk}`.slice(-100_000);

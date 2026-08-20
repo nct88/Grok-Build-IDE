@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { terminateProcessTree } from "../processTree.js";
 
 export interface CliRunOptions {
   executable: string;
@@ -53,7 +54,7 @@ export async function runGrokCli(options: CliRunOptions): Promise<CliRunResult> 
     let stdout = "";
     let stderr = "";
     const timer = setTimeout(() => {
-      child.kill();
+      void terminateProcessTree(child, true);
     }, options.timeoutMs ?? 20_000);
 
     child.stdout.setEncoding("utf8");

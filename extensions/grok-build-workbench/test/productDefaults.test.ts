@@ -21,6 +21,11 @@ describe("Grok Build IDE fresh-install defaults", () => {
     expect(manifest.contributes.configurationDefaults["files.hotExit"]).toBeUndefined();
     expect(profile["files.hotExit"]).toBe("onExitAndWindowClose");
     expect(profile["security.workspace.trust.enabled"]).toBe(true);
+    expect(profile["window.restoreWindows"]).toBe("one");
+    expect(profile["git.openRepositoryInParentFolders"]).toBe("never");
+    expect(profile["git.detectSubmodules"]).toBe(false);
+    expect(profile["files.watcherExclude"]["**/node_modules/**"]).toBe(true);
+    expect(profile["files.watcherExclude"]["**/workspaces/req_*/**"]).toBe(true);
   });
 
   it("keeps reverse-terminal fail-closed on a fresh install", () => {

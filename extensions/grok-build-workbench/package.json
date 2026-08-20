@@ -3,7 +3,7 @@
   "displayName": "Grok Build IDE",
   "icon": "logo/grok-fluffy.png",
   "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publisher": "local-grok-workbench",
   "license": "MIT",
   "repository": {
@@ -357,6 +357,9 @@
       "workbench.secondarySideBar.showLabels": true,
       "workbench.sideBar.location": "left",
       "window.title": "Grok Build IDE${separator}${activeEditorShort}${separator}${rootName}",
+      "window.restoreWindows": "one",
+      "git.openRepositoryInParentFolders": "never",
+      "git.detectSubmodules": false,
       "cSpell.diagnosticLevel": "Hint",
       "cSpell.validateDirectives": false,
       "errorLens.enabledDiagnosticLevels": [

@@ -8,7 +8,7 @@ Grok Build IDE là trình soạn thảo mã nguồn tùy chọn dựa trên **Co
 
 > Grok Build IDE là repository độc lập. Ứng dụng agent desktop nằm tại [`nct88/Grok-Build-Desktop`](https://github.com/nct88/Grok-Build-Desktop).
 
-Phiên bản hiện tại: **1.0.10** — xem [`build/grok/VERSION`](build/grok/VERSION).
+Phiên bản hiện tại: **1.0.11** — xem [`build/grok/VERSION`](build/grok/VERSION).
 
 ## Tải xuống
 
@@ -16,13 +16,13 @@ Release được phát hành công khai tại GitHub Releases:
 
 | Gói | Mục đích | Tải xuống |
 |---|---|---|
-| Inno Setup | Cài đặt đầy đủ trên Windows | [Grok-Build-IDE-Setup-1.0.10.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-Setup-1.0.10.exe) |
-| Portable EXE | File chạy portable tự giải nén | [Grok-Build-IDE-1.0.10-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-1.0.10-win32-x64-portable.exe) |
-| Portable ZIP | Giải nén một lần để sử dụng lâu dài | [Grok-Build-IDE-1.0.10-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/Grok-Build-IDE-1.0.10-win32-x64-portable.zip) |
-| VSIX Update | Cập nhật riêng Grok Build Workbench | [grok-build-workbench-1.0.10.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/grok-build-workbench-1.0.10.vsix) |
-| Manifest | Kích thước và SHA-256 của artifact | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.10/MANIFEST.json) |
+| Inno Setup | Cài đặt đầy đủ trên Windows | [Grok-Build-IDE-Setup-1.0.11.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.11/Grok-Build-IDE-Setup-1.0.11.exe) |
+| Portable EXE | File chạy portable tự giải nén | [Grok-Build-IDE-1.0.11-win32-x64-portable.exe](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.11/Grok-Build-IDE-1.0.11-win32-x64-portable.exe) |
+| Portable ZIP | Giải nén một lần để sử dụng lâu dài | [Grok-Build-IDE-1.0.11-win32-x64-portable.zip](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.11/Grok-Build-IDE-1.0.11-win32-x64-portable.zip) |
+| VSIX Update | Cập nhật riêng Grok Build Workbench | [grok-build-workbench-1.0.11.vsix](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.11/grok-build-workbench-1.0.11.vsix) |
+| Manifest | Kích thước và SHA-256 của artifact | [MANIFEST.json](https://github.com/nct88/Grok-Build-IDE/releases/download/v1.0.11/MANIFEST.json) |
 
-Trang release: [Grok Build IDE v1.0.10](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.10).
+Trang release: [Grok Build IDE v1.0.11](https://github.com/nct88/Grok-Build-IDE/releases/tag/v1.0.11).
 
 Các executable Windows hiện chưa được ký Authenticode. SmartScreen có thể cảnh báo trong lần chạy đầu; hãy kiểm tra SHA-256 trong `MANIFEST.json` trước khi chạy.
 
@@ -108,7 +108,7 @@ Extension tìm CLI theo cấu hình `grokBuild.executablePath`, `PATH` và vị 
 
 ### Cách 1: Inno Setup
 
-1. Tải `Grok-Build-IDE-Setup-1.0.10.exe`.
+1. Tải `Grok-Build-IDE-Setup-1.0.11.exe`.
 2. Đối chiếu checksum với `MANIFEST.json`.
 3. Chạy installer.
 4. Mở **Grok Build IDE** từ Start Menu.

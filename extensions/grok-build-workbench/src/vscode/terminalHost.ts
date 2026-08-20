@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type * as acp from "@agentclientprotocol/sdk";
+import { terminateProcessTree } from "../processTree.js";
 
 interface ManagedTerminal {
   id: string;
@@ -152,7 +153,7 @@ export class TerminalHost {
       return;
     }
     if (terminal.exitCode === null && terminal.signal === null) {
-      terminal.process.kill();
+      void terminateProcessTree(terminal.process, true);
     }
     this.terminals.delete(request.terminalId);
   }
@@ -175,14 +176,14 @@ export class TerminalHost {
       return;
     }
     if (terminal.exitCode === null && terminal.signal === null) {
-      terminal.process.kill();
+      void terminateProcessTree(terminal.process, true);
     }
   }
 
   dispose(): void {
     for (const terminal of this.terminals.values()) {
       if (terminal.exitCode === null && terminal.signal === null) {
-        terminal.process.kill();
+        void terminateProcessTree(terminal.process, true);
       }
     }
     this.terminals.clear();

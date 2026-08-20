@@ -14,8 +14,8 @@ $expected = [ordered]@{
 	'security.workspace.trust.enabled' = $true
 	'window.openFoldersInNewWindow' = 'off'
 	'window.openWithoutArgumentsInNewWindow' = 'off'
-	'window.restoreWindows' = 'preserve'
-	'git.openRepositoryInParentFolders' = 'always'
+	'window.restoreWindows' = 'one'
+	'git.openRepositoryInParentFolders' = 'never'
 }
 foreach ($property in $expected.GetEnumerator()) {
 	$actual = $settings.PSObject.Properties[$property.Key].Value
