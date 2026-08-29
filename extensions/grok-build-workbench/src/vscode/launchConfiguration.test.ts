@@ -28,7 +28,7 @@ describe("buildGrokLaunchArguments", () => {
     ]);
   });
 
-  it("enables Grok always-approve only for full access", () => {
+  it("uses bypassPermissions for full access", () => {
     expect(
       buildGrokLaunchArguments({
         extraArguments: [],
@@ -36,7 +36,7 @@ describe("buildGrokLaunchArguments", () => {
         reasoningEffort: "",
         permissionMode: "full",
       }),
-    ).toEqual(["--always-approve"]);
+    ).toEqual(["--permission-mode", "bypassPermissions"]);
   });
 
   it("uses Grok's native auto permission mode", () => {

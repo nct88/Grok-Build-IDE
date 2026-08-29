@@ -27,7 +27,7 @@ export const PERMISSION_MODES: PermissionMode[] = [
   "full",
 ];
 
-export const REASONING_EFFORTS = ["low", "medium", "high", "xhigh"] as const;
+export const REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number] | "";
 
 export interface ToolLocation {
@@ -169,6 +169,11 @@ export type GrokEvent =
       title: string;
       kind?: string;
       locations?: ToolLocation[];
+      hookAsk?: boolean;
+      hookName?: string;
+      reason?: string;
+      additionalContext?: string;
+      meta?: unknown;
       options: Array<{
         optionId: string;
         name: string;
@@ -233,5 +238,6 @@ export interface GrokClientOptions {
   agentVersionHint?: string;
   resumeSessionId?: string;
   reasoningEffort?: string;
+  permissionMode?: string;
   mcpServers?: acp.McpServer[];
 }

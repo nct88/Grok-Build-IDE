@@ -316,7 +316,7 @@ export class GrokClient {
     if (!this.connection || !this.currentSessionId) {
       return;
     }
-    await this.connection.cancel({ sessionId: this.currentSessionId });
+    await this.withTimeout(this.connection.cancel({ sessionId: this.currentSessionId }), "session/cancel");
   }
 
   async setSessionMode(modeId: string): Promise<void> {
@@ -416,10 +416,11 @@ export class GrokClient {
     this.process = undefined;
   }
 
-  /** Grok CLI 1.0.5+ reads reasoning effort from session/new and session/load `_meta`. */
+  /** Grok CLI 1.0.5+ reads open-session settings from session/new and session/load `_meta`. */
   private sessionOpenFields(): { _meta?: Record<string, unknown> } {
     const meta = sessionRequestMeta({
       reasoningEffort: this.options.reasoningEffort ?? null,
+      permissionMode: this.options.permissionMode ?? null,
     });
     return meta ? { _meta: meta } : {};
   }

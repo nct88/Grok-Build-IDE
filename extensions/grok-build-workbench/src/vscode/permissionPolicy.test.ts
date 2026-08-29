@@ -27,11 +27,20 @@ describe("permission policy", () => {
     expect(selectAutomaticPermissionOption("plan", "read", options)).toBeUndefined();
   });
 
-  it("dontAsk and full prefer allow-always and never select reject", () => {
+  it("full prefers allow-always, while dontAsk keeps the CLI deny-by-default policy", () => {
     expect(selectAutomaticPermissionOption("full", "execute", options)?.optionId).toBe("always");
-    expect(selectAutomaticPermissionOption("dontAsk", "execute", options)?.optionId).toBe("always");
+    expect(selectAutomaticPermissionOption("dontAsk", "execute", options)).toBeUndefined();
     expect(
       selectAutomaticPermissionOption("full", "delete", [options[2]!]),
+    ).toBeUndefined();
+  });
+
+  it("never auto-approves a PreToolUse hook ask, including full access", () => {
+    expect(
+      selectAutomaticPermissionOption("full", "execute", options, {
+        toolCall: { kind: "execute" },
+        _meta: { hookName: "PreToolUse", decision: "ask" },
+      }),
     ).toBeUndefined();
   });
 });

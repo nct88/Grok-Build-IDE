@@ -2,6 +2,12 @@
 
 Public, versioned changes for Grok Build IDE.
 
+## 1.0.12 — 2026-08-29
+
+- Align ACP permission modes with Grok CLI 1.0.13: `dontAsk` remains deny-by-default, Full access uses `--permission-mode bypassPermissions`, and hook asks always stay interactive.
+- Add CLI folder-hook trust commands, apply changed permission modes by reconnecting the active session, and time-bound ACP cancellation.
+- Send permission mode metadata on new and resumed sessions; update real-smoke expectations for supported modern CLI versions.
+
 ## 1.0.11 — 2026-08-20
 
 - Added workspace Grok skills (`/verify-ui`, `/use-mcp`, `/write-fix-log`, `/run-check`), always-on `.grok/rules`, and Chrome DevTools MCP.

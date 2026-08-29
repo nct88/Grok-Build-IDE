@@ -50,7 +50,7 @@ export function buildGrokLaunchArguments(settings: GrokLaunchSettings): string[]
         argumentsList.push("--permission-mode", "dontAsk");
         break;
       case "full":
-        argumentsList.push("--always-approve");
+        argumentsList.push("--permission-mode", "bypassPermissions");
         break;
       case "ask":
       default:

@@ -158,6 +158,20 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("grokBuild.mcp", () => provider.showMcpManager()),
     vscode.commands.registerCommand("grokBuild.worktree", () => provider.showWorktreeManager()),
     vscode.commands.registerCommand("grokBuild.plugins", () => provider.showPluginManager()),
+    vscode.commands.registerCommand("grokBuild.trustHooks", async () => {
+      const choice = await vscode.window.showWarningMessage(
+        "Trust this folder for Grok CLI hooks and local MCP servers? Those hooks may run code from the repository.",
+        { modal: true },
+        "Trust Folder",
+      );
+      if (choice !== "Trust Folder") return;
+      const result = await controller.setHooksTrust(true);
+      void vscode.window.showInformationMessage(`Grok CLI hooks trusted for ${result.path}.`);
+    }),
+    vscode.commands.registerCommand("grokBuild.untrustHooks", async () => {
+      const result = await controller.setHooksTrust(false);
+      void vscode.window.showInformationMessage(`Grok CLI hooks are no longer trusted for ${result.path}.`);
+    }),
     vscode.commands.registerCommand("grokBuild.openExplorer", () => provider.openExplorer()),
     vscode.commands.registerCommand("grokBuild.openIde", () => layoutMode.openGrokBuildIde()),
     vscode.commands.registerCommand("grokBuild.openGrokBuildIde", () => layoutMode.openGrokBuildIde()),

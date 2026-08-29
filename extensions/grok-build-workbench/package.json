@@ -3,7 +3,7 @@
   "displayName": "Grok Build IDE",
   "icon": "logo/grok-fluffy.png",
   "description": "Grok Build IDE — agent-first coding environment for the Grok CLI via ACP.",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "publisher": "local-grok-workbench",
   "license": "MIT",
   "repository": {
@@ -53,6 +53,8 @@
     "onCommand:grokBuild.mcp",
     "onCommand:grokBuild.worktree",
     "onCommand:grokBuild.plugins",
+    "onCommand:grokBuild.trustHooks",
+    "onCommand:grokBuild.untrustHooks",
     "onCommand:grokBuild.login",
     "onCommand:grokBuild.doctor",
     "onCommand:grokBuild.installExtension",
@@ -157,6 +159,18 @@
         "title": "Manage Plugins",
         "category": "Grok Build",
         "icon": "$(extensions)"
+      },
+      {
+        "command": "grokBuild.trustHooks",
+        "title": "Trust Folder Hooks",
+        "category": "Grok Build",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "grokBuild.untrustHooks",
+        "title": "Untrust Folder Hooks",
+        "category": "Grok Build",
+        "icon": "$(shield)"
       },
       {
         "command": "grokBuild.login",
@@ -488,8 +502,8 @@
             "Auto-approve reads and edits; still ask for shell/unknown tools.",
             "Native auto mode; client also auto-approves safe read/search/think/fetch.",
             "Plan-oriented mode; keep execution interactive.",
-            "Auto-approve ACP tool permission requests (dontAsk / always-approve style).",
-            "Pass --always-approve. Deny rules, hooks, sandbox, and workspace FS scope still apply."
+            "Pass --permission-mode dontAsk. Grok CLI denies requests that are not already allow-listed.",
+            "Pass --permission-mode bypassPermissions. Hook confirmation requests still remain interactive."
           ],
           "default": "ask",
           "scope": "resource",
@@ -629,7 +643,7 @@
     "test:visual": "node test/visual/verify-webview.mjs",
     "check": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production && node ../../scripts/check-grok-release-contract.mjs && node test/visual/verify-webview.mjs",
     "vscode:prepublish": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vitest/vitest.mjs run && node esbuild.mjs --production",
-    "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.10.vsix"
+  "package:vsix": "node ./node_modules/@vscode/vsce/vsce package --no-dependencies --out grok-build-workbench-1.0.12.vsix"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.3.0",

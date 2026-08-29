@@ -424,11 +424,11 @@
         ? "host shell blocked until Workspace Trust"
         : "host shell disabled";
     const labels = {
-      full: `Full access: auto-approve ACP permission prompts; ACP file host: ${fileScope}; ${shellScope}`,
+      full: `Full access: auto-approve ACP permission prompts except hook confirmation requests; ACP file host: ${fileScope}; ${shellScope}`,
       auto: `Grok Auto mode; safe ACP requests may be auto-approved; ACP file host: ${fileScope}; ${shellScope}`,
       acceptEdits: `Accept edits: auto-approve reads and edits; execute asks; ACP file host: ${fileScope}; ${shellScope}`,
       plan: `Plan mode: keep ACP tool execution interactive; ACP file host: ${fileScope}; ${shellScope}`,
-      dontAsk: `Don't ask: auto-approve ACP permission prompts; ACP file host: ${fileScope}; ${shellScope}`,
+      dontAsk: `Don't ask: Grok CLI denies requests not already allow-listed; ACP file host: ${fileScope}; ${shellScope}`,
       ask: `Ask for each ACP permission request; ACP file host: ${fileScope}; ${shellScope}`,
     };
     return labels[mode] || labels.ask;

@@ -13,11 +13,12 @@ import type {
 import { PERMISSION_MODES } from "../acp/types.js";
 import { cliOptions, runGrokCli } from "./cliRunner.js";
 import { EditReviewService } from "./editReviewService.js";
+import { setFolderTrust } from "./folderTrust.js";
 import { resolveGrokExecutable } from "./executablePath.js";
 import { parseGrokVersion } from "./executableVersion.js";
 import { discoverGrokModels } from "./grokModels.js";
 import { buildGrokLaunchArguments } from "./launchConfiguration.js";
-import { selectAutomaticPermissionOption } from "./permissionPolicy.js";
+import { isHookAskRequest, selectAutomaticPermissionOption } from "./permissionPolicy.js";
 import {
   assertTerminalEnabled,
   resolveRuntimeSecurityPolicy,
@@ -224,6 +225,7 @@ export class GrokController implements vscode.Disposable {
         ...(cliProbe.version ? { agentVersionHint: cliProbe.version } : {}),
         ...(this.resumeSessionId ? { resumeSessionId: this.resumeSessionId } : {}),
         reasoningEffort,
+        permissionMode,
         mcpServers: [],
       },
       this.createHost(),
@@ -358,10 +360,27 @@ export class GrokController implements vscode.Disposable {
     if (!PERMISSION_MODES.includes(mode)) {
       throw new Error(`Unsupported permission mode: ${mode}`);
     }
+    if (this.state === "running") {
+      throw new Error("Stop the active Grok Build turn before changing permission mode.");
+    }
+    const resumeSessionId = this.activeSessionId;
+    const reconnect = Boolean(this.client);
     await vscode.workspace
       .getConfiguration("grokBuild")
       .update("permissionMode", mode, vscode.ConfigurationTarget.Workspace);
     this.refreshContext();
+    if (reconnect) {
+      await this.disconnect();
+      await this.connect(resumeSessionId);
+    }
+  }
+
+  async setHooksTrust(trusted: boolean): Promise<{ path: string; trusted: boolean; file: string }> {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) throw new Error("Open a folder before changing Grok CLI hook trust.");
+    const grokHome = process.env.GROK_HOME || path.join(os.homedir(), ".grok");
+    const result = await setFolderTrust(grokHome, folder.uri.fsPath, trusted);
+    return { path: result.path, trusted: result.trusted, file: result.file };
   }
 
   async setSessionConfigOption(configId: string, value: string | boolean): Promise<void> {
@@ -610,6 +629,7 @@ export class GrokController implements vscode.Disposable {
       permissionMode,
       toolKind,
       request.options,
+      request,
     );
     if (automaticOption) {
       const requestId = `permission-${Date.now()}-${++this.permissionSequence}`;
@@ -631,6 +651,19 @@ export class GrokController implements vscode.Disposable {
       toolCallId: request.toolCall.toolCallId,
       title: request.toolCall.title ?? "Grok Build action",
       ...(toolKind ? { kind: toolKind } : {}),
+      ...(isHookAskRequest(request) ? { hookAsk: true } : {}),
+      ...(typeof request._meta === "object" && request._meta !== null ? { meta: request._meta } : {}),
+      ...(typeof request._meta?.hookName === "string"
+        ? { hookName: request._meta.hookName }
+        : typeof request._meta?.hook_name === "string"
+          ? { hookName: request._meta.hook_name }
+          : {}),
+      ...(typeof request._meta?.reason === "string" ? { reason: request._meta.reason } : {}),
+      ...(typeof request._meta?.additionalContext === "string"
+        ? { additionalContext: request._meta.additionalContext }
+        : typeof request._meta?.additional_context === "string"
+          ? { additionalContext: request._meta.additional_context }
+          : {}),
       ...(request.toolCall.locations?.length
         ? {
             locations: request.toolCall.locations.map((location) => ({

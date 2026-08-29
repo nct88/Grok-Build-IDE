@@ -53,7 +53,7 @@ describe.skipIf(!runRealSmoke)("GrokClient real Grok Build smoke", () => {
         cwd,
         requestTimeoutMs: 90_000,
         enableTerminal: false,
-        clientVersion: "1.0.8-real-smoke",
+        clientVersion: "1.0.12-real-smoke",
         ...(process.env.GROK_VERIFIED_CLI_VERSION
           ? { agentVersionHint: process.env.GROK_VERIFIED_CLI_VERSION }
           : {}),
@@ -65,7 +65,7 @@ describe.skipIf(!runRealSmoke)("GrokClient real Grok Build smoke", () => {
 
     await client.start();
     await client.prompt(
-      "Reply with exactly ACP_1_0_3_OK. Do not call tools and do not inspect files.",
+      "Reply with exactly ACP_CLI_COMPAT_OK. Do not call tools and do not inspect files.",
     );
 
     const runtime = events.find(
@@ -80,11 +80,14 @@ describe.skipIf(!runRealSmoke)("GrokClient real Grok Build smoke", () => {
       .join("");
     expect(runtime?.protocolVersion).toBe(1);
     expect(runtime?.agentName).toMatch(/Grok Build/i);
-    expect(process.env.GROK_VERIFIED_CLI_VERSION).toBe(
-      process.env.GROK_EXPECTED_VERSION || "1.0.3",
-    );
-    expect(runtime?.agentVersion).toBe(process.env.GROK_EXPECTED_VERSION || "1.0.3");
-    expect(response).toContain("ACP_1_0_3_OK");
+    const expectedVersion = process.env.GROK_EXPECTED_VERSION;
+    if (expectedVersion) {
+      expect(process.env.GROK_VERIFIED_CLI_VERSION).toBe(expectedVersion);
+      expect(runtime?.agentVersion).toBe(expectedVersion);
+    } else {
+      expect(runtime?.agentVersion).toMatch(/^1\.(?:[5-9]|[1-9]\d)\.\d+(?:[-+].*)?$/);
+    }
+    expect(response).toContain("ACP_CLI_COMPAT_OK");
     expect(events).toContainEqual({ type: "turn_complete", stopReason: "end_turn" });
   }, 100_000);
 });
